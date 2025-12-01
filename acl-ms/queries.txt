@@ -18,14 +18,13 @@ RETURN h.name AS hotel_name, COUNT(DISTINCT t) AS couple_count
 ORDER BY hotel_name
 
 Query 4:
-MATCH (t:Traveller {gender: 'Female'})-[:WROTE]->(r:Review)-[:REVIEWS]->(h:Hotel)
-WITH h, AVG(r.score_location) AS avg_location_score
-WITH MAX(avg_location_score) AS max_score
-MATCH (t:Traveller {gender: 'Female'})-[:WROTE]->(r:Review)-[:REVIEWS]->(h:Hotel)
-WITH h, AVG(r.score_location) AS avg_location_score, max_score
-WHERE avg_location_score = max_score
-RETURN h.name AS hotel_name, avg_location_score
-ORDER BY hotel_name
+MATCH (r:Review)-[:REVIEWED]->(h:Hotel)
+WITH h, AVG(r.score_cleanliness) AS avg_review_cleanliness
+WHERE avg_review_cleanliness < 8.8
+RETURN h.name AS hotel_name,
+       (avg_review_cleanliness * 100) / 100 AS avg_review_cleanliness
+ORDER BY avg_review_cleanliness ASC
+LIMIT 3
 
 Query5:
 MATCH (t:Traveller {gender: 'Female'})-[:WROTE]->(r:Review)-[:REVIEWED]->(h:Hotel)

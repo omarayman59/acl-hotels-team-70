@@ -1,0 +1,24 @@
+Exceeded Eexpectations Rule:
+MATCH (t:Traveller {gender: 'Female', type: 'Solo'})-[:WROTE]->(r:Review)-[:REVIEWED]->(h:Hotel)
+
+WITH h, t.age AS age_group,
+     (h.cleanliness_base + h.comfort_base + h.facilities_base) AS base_sum,
+     AVG(r.score_cleanliness + r.score_comfort + r.score_facilities) AS avg_review_sum
+
+WHERE base_sum >= avg_review_sum
+
+WITH age_group, h,
+ base_sum,
+ avg_review_sum,
+((base_sum - avg_review_sum) / avg_review_sum) * 100 AS improvement_percentage
+
+WITH age_group,
+     MIN(improvement_percentage) AS min_improvement,
+     MAX(improvement_percentage) AS max_improvement,
+     AVG(improvement_percentage) AS avg_improvement
+
+RETURN age_group,
+       ROUND(min_improvement * 100) / 100 AS min_improvement_percentage,
+       ROUND(max_improvement * 100) / 100 AS max_improvement_percentage,
+       ROUND(avg_improvement * 100) / 100 AS avg_improvement_percentage
+ORDER BY age_group

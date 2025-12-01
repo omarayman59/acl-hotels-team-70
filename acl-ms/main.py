@@ -21,7 +21,6 @@ def data_cleaning():
     df_hotels = pd.read_csv("hotels.csv")
     df_visa = pd.read_csv("visa.csv")
 
-    # Create traveller_df with user_id, age, type, and gender
     traveller_df = df_users[
         ["user_id", "age_group", "traveller_type", "user_gender"]
     ].copy()
@@ -29,15 +28,11 @@ def data_cleaning():
         columns={"age_group": "age", "traveller_type": "type", "user_gender": "gender"}
     )
 
-    # Create hotel_df with hotel_id, name, star_rating, cleanliness_base, comfort_base, facilities_base and average_reviews_score
-    # Calculate average review scores per hotel
     avg_reviews = df_reviews.groupby("hotel_id")["score_overall"].mean().reset_index()
     avg_reviews = avg_reviews.rename(columns={"score_overall": "average_reviews_score"})
 
-    # Merge hotels with average review scores
     hotel_and_reviews = df_hotels.merge(avg_reviews, on="hotel_id", how="left")
 
-    # Select required columns
     hotel_df = hotel_and_reviews[
         [
             "hotel_id",
@@ -54,11 +49,9 @@ def data_cleaning():
     city_df = df_hotels[["city"]].copy()
     city_df = city_df.rename(columns={"city": "name"})
 
-    # Get distinct countries from both hotels and users datasets
     hotels_countries = df_hotels[["country"]].drop_duplicates()
     users_countries = df_users[["country"]].drop_duplicates()
 
-    # Combine and get all unique countries
     country_df = pd.concat([hotels_countries, users_countries], ignore_index=True)
     country_df = country_df.drop_duplicates().reset_index(drop=True)
     country_df = country_df.rename(columns={"country": "name"})
@@ -88,19 +81,16 @@ def data_cleaning():
 
 
 def create_wrote_relationship(manager: Neo4jManager):
-    # Load original data (these have user_id)
     df_reviews = pd.read_csv("reviews.csv")
 
-    # Create WROTE relationship using original df_reviews
-    # df_reviews should have both user_id and review_id columns
     manager.create_relationships_from_dataframe(
         df=df_reviews,
         from_label="Traveller",
-        from_key="user_id",  # Traveller node property
-        from_column="user_id",  # Column in df_reviews
+        from_key="user_id",
+        from_column="user_id",
         to_label="Review",
-        to_key="review_id",  # Review node property
-        to_column="review_id",  # Column in df_reviews
+        to_key="review_id",
+        to_column="review_id",
         relationship_type="WROTE",
     )
 
@@ -116,7 +106,7 @@ def create_from_country_relationship(manager: Neo4jManager):
         from_column="user_id",
         to_label="Country",
         to_key="name",
-        to_column="country",  # Check your CSV - might be "user_country" or similar
+        to_column="country",
         relationship_type="FROM_COUNTRY",
     )
     manager.close()
@@ -221,27 +211,23 @@ def main():
     manager = Neo4jManager(URI, USERNAME, PASSWORD)
 
     try:
-        # Load your data
         traveller_df, hotel_df, city_df, country_df, review_df = data_cleaning()
 
-        # Create nodes
+        # Create nodes:
         # manager.create_nodes_from_dataframe(traveller_df, "Traveller", "user_id")
         # manager.create_nodes_from_dataframe(hotel_df, "Hotel", "hotel_id")
         # manager.create_nodes_from_dataframe(city_df, "City", "city_id")
         # manager.create_nodes_from_dataframe(country_df, "Country", "country_id")
         # manager.create_nodes_from_dataframe(review_df, "Review", "review_id")
 
-        # Create relationships
-        create_needs_visa_relationship(manager)
-        # Assuming df_reviews has user_id and hotel_id columns
-        # manager.create_relationships_from_dataframe(
-        #     df_reviews,
-        #     "Traveller", "user_id", "user_id",
-        #     "Review", "review_id", "review_id",
-        #     "WROTE"
-        # )
-
-        # Get cleaned DataFrames
+        # Create relationships:
+        # create_wrote_relationship(manager)
+        # create_from_country_relationship(manager)
+        # create_stayed_at_relationship(manager)
+        # create_reviewed_relationship(manager)
+        # create_located_in_relationship(manager)
+        # create_located_in_city_country_relationship(manager)
+        # create_needs_visa_relationship(manager)
 
     finally:
         print("Closed")
