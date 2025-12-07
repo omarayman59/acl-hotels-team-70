@@ -7,7 +7,7 @@ def _load_location_data() -> tuple[Set[str], Set[str]]:
     cities = set()
     countries = set()
 
-    csv_path = os.path.join(os.path.dirname(__file__), "hotels.csv")
+    csv_path = os.path.join(os.path.dirname(__file__), "../hotels.csv")
 
     try:
         with open(csv_path, "r", encoding="utf-8") as f:

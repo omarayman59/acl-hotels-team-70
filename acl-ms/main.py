@@ -1,5 +1,4 @@
 import pandas as pd
-
 from classes import Neo4jManager
 
 
@@ -16,10 +15,10 @@ def read_config(config_file):
 
 
 def data_cleaning():
-    df_reviews = pd.read_csv("reviews.csv")
-    df_users = pd.read_csv("users.csv")
-    df_hotels = pd.read_csv("hotels.csv")
-    df_visa = pd.read_csv("visa.csv")
+    df_reviews = pd.read_csv("../reviews.csv")
+    df_users = pd.read_csv("../users.csv")
+    df_hotels = pd.read_csv("../hotels.csv")
+    df_visa = pd.read_csv("../visa.csv")
 
     traveller_df = df_users[
         ["user_id", "age_group", "traveller_type", "user_gender"]
