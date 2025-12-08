@@ -45,7 +45,7 @@ export const MessageInput = () => {
         onChange={(e) => setMessage(e.target.value)}
       />
       <InputGroupButton
-        className="size-9 bg-primary hover:bg-primary/90 rounded-full active:scale-103 transition-all duration-100"
+        className="cursor-pointer size-9 bg-primary hover:bg-primary/90 rounded-full active:scale-103 transition-all duration-100"
         onClick={handleSendMessage}
         disabled={disableSend}
       >

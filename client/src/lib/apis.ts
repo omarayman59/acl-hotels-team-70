@@ -2,14 +2,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 export interface QueryResponse {
   success: boolean;
-  prompt: string;
-  detected_intents: string[];
-  extracted_parameters: Record<string, any>;
-  cypher_query: string;
-  results: any[];
-  result_count: number;
-  error?: string;
-  error_type?: string;
+  response: string;
 }
 
 async function processQuery({
@@ -19,7 +12,10 @@ async function processQuery({
   prompt: string;
   signal: AbortSignal;
 }): Promise<QueryResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/query`, {
+  // const endpoint = `${API_BASE_URL}/api/embed`;
+  // const endpoint = `${API_BASE_URL}/api/embed`;
+  const endpoint = `${API_BASE_URL}/api/query`;
+  const response = await fetch(endpoint, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -34,23 +30,12 @@ async function processQuery({
     throw new Error(data.error || `Query failed: ${response.statusText}`);
   }
 
-  return data;
-}
+  console.log(data);
 
-/**
- * Format hotel results for display
- */
-function formatHotelResults(results: any[]): string[] {
-  return results.map((result) => {
-    // Handle different result structures
-    if (result["h.name"]) {
-      return result["h.name"];
-    }
-    if (result.h && result.h.name) {
-      return result.h.name;
-    }
-    return JSON.stringify(result);
-  });
+  return {
+    success: data.success,
+    response: data?.llm_response ?? "Problem with response",
+  };
 }
 
 export { processQuery };

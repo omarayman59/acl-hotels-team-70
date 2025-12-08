@@ -27,12 +27,19 @@ def data_cleaning():
         columns={"age_group": "age", "traveller_type": "type", "user_gender": "gender"}
     )
 
-    avg_reviews = df_reviews.groupby("hotel_id")["score_overall"].mean().reset_index()
-    avg_reviews = avg_reviews.rename(columns={"score_overall": "average_reviews_score"})
+    # Calculate average_reviews_score from all 6 base scores
+    df_hotels["average_reviews_score"] = df_hotels[
+        [
+            "cleanliness_base",
+            "comfort_base",
+            "facilities_base",
+            "location_base",
+            "staff_base",
+            "value_for_money_base",
+        ]
+    ].mean(axis=1)
 
-    hotel_and_reviews = df_hotels.merge(avg_reviews, on="hotel_id", how="left")
-
-    hotel_df = hotel_and_reviews[
+    hotel_df = df_hotels[
         [
             "hotel_id",
             "hotel_name",
@@ -40,6 +47,9 @@ def data_cleaning():
             "cleanliness_base",
             "comfort_base",
             "facilities_base",
+            "location_base",
+            "staff_base",
+            "value_for_money_base",
             "average_reviews_score",
         ]
     ].copy()
@@ -70,17 +80,18 @@ def data_cleaning():
         ]
     ].copy()
 
-    return (
-        traveller_df,
-        hotel_df,
-        city_df,
-        country_df,
-        review_df,
-    )
+    # Create visa dataframe with unique identifier
+    visa_df = df_visa.copy()
+    visa_df["visa_id"] = range(1, len(visa_df) + 1)
+    visa_df = visa_df[["visa_id", "from", "to", "requires_visa", "visa_type"]].copy()
+    visa_df = visa_df.rename(columns={"from": "from_country", "to": "to_country"})
+
+    print("done data cleaning")
+    return (traveller_df, hotel_df, city_df, country_df, review_df, visa_df)
 
 
 def create_wrote_relationship(manager: Neo4jManager):
-    df_reviews = pd.read_csv("reviews.csv")
+    df_reviews = pd.read_csv("../reviews.csv")
 
     manager.create_relationships_from_dataframe(
         df=df_reviews,
@@ -92,12 +103,11 @@ def create_wrote_relationship(manager: Neo4jManager):
         to_column="review_id",
         relationship_type="WROTE",
     )
-
-    manager.close()
+    print("done creating wrote relationship")
 
 
 def create_from_country_relationship(manager: Neo4jManager):
-    df_users = pd.read_csv("users.csv")
+    df_users = pd.read_csv("../users.csv")
     manager.create_relationships_from_dataframe(
         df=df_users,
         from_label="Traveller",
@@ -108,13 +118,13 @@ def create_from_country_relationship(manager: Neo4jManager):
         to_column="country",
         relationship_type="FROM_COUNTRY",
     )
-    manager.close()
+    print("done creating from country relationship")
 
 
 def create_stayed_at_relationship(manager: Neo4jManager):
-    df_users = pd.read_csv("users.csv")
-    df_hotels = pd.read_csv("hotels.csv")
-    df_reviews = pd.read_csv("reviews.csv")
+    df_users = pd.read_csv("../users.csv")
+    df_hotels = pd.read_csv("../hotels.csv")
+    df_reviews = pd.read_csv("../reviews.csv")
     df_reviews_and_hotels = df_reviews.merge(df_hotels, on="hotel_id", how="left")
     df_users_and_reviews_and_hotels = df_users.merge(
         df_reviews_and_hotels, on="user_id", how="left"
@@ -130,11 +140,11 @@ def create_stayed_at_relationship(manager: Neo4jManager):
         to_column="hotel_id",
         relationship_type="STAYED_AT",
     )
-    manager.close()
+    print("done creating stayed at relationship")
 
 
 def create_reviewed_relationship(manager: Neo4jManager):
-    df_reviews = pd.read_csv("reviews.csv")
+    df_reviews = pd.read_csv("../reviews.csv")
 
     manager.create_relationships_from_dataframe(
         df=df_reviews,
@@ -146,11 +156,11 @@ def create_reviewed_relationship(manager: Neo4jManager):
         to_column="hotel_id",
         relationship_type="REVIEWED",
     )
-    manager.close()
+    print("done creating reviewed relationship")
 
 
 def create_located_in_relationship(manager: Neo4jManager):
-    df_hotels = pd.read_csv("hotels.csv")
+    df_hotels = pd.read_csv("../hotels.csv")
 
     manager.create_relationships_from_dataframe(
         df=df_hotels,
@@ -162,11 +172,11 @@ def create_located_in_relationship(manager: Neo4jManager):
         to_column="city",
         relationship_type="LOCATED_IN",
     )
-    manager.close()
+    print("done creating located in relationship")
 
 
 def create_located_in_city_country_relationship(manager: Neo4jManager):
-    df_hotels = pd.read_csv("hotels.csv")
+    df_hotels = pd.read_csv("../hotels.csv")
 
     manager.create_relationships_from_dataframe(
         df=df_hotels,
@@ -178,11 +188,11 @@ def create_located_in_city_country_relationship(manager: Neo4jManager):
         to_column="country",
         relationship_type="LOCATED_IN",
     )
-    manager.close()
+    print("done creating located in city country relationship")
 
 
 def create_needs_visa_relationship(manager: Neo4jManager):
-    df_visa = pd.read_csv("visa.csv")
+    df_visa = pd.read_csv("../visa.csv")
 
     df_visa_required = df_visa[df_visa["requires_visa"] == "Yes"].copy()
 
@@ -197,7 +207,7 @@ def create_needs_visa_relationship(manager: Neo4jManager):
         relationship_type="NEEDS_VISA",
         property_columns=["visa_type"],
     )
-    manager.close()
+    print("done creating visa relationship")
 
 
 def main():
@@ -210,25 +220,29 @@ def main():
     manager = Neo4jManager(URI, USERNAME, PASSWORD)
 
     try:
-        traveller_df, hotel_df, city_df, country_df, review_df = data_cleaning()
+        traveller_df, hotel_df, city_df, country_df, review_df, visa_df = (
+            data_cleaning()
+        )
 
         # Create nodes:
-        # manager.create_nodes_from_dataframe(traveller_df, "Traveller", "user_id")
-        # manager.create_nodes_from_dataframe(hotel_df, "Hotel", "hotel_id")
-        # manager.create_nodes_from_dataframe(city_df, "City", "city_id")
-        # manager.create_nodes_from_dataframe(country_df, "Country", "country_id")
-        # manager.create_nodes_from_dataframe(review_df, "Review", "review_id")
+        manager.create_nodes_from_dataframe(traveller_df, "Traveller", "user_id")
+        manager.create_nodes_from_dataframe(hotel_df, "Hotel", "hotel_id")
+        manager.create_nodes_from_dataframe(city_df, "City", "city_id")
+        manager.create_nodes_from_dataframe(country_df, "Country", "country_id")
+        manager.create_nodes_from_dataframe(review_df, "Review", "review_id")
+        manager.create_nodes_from_dataframe(visa_df, "Visa", "visa_id")
 
         # Create relationships:
-        # create_wrote_relationship(manager)
-        # create_from_country_relationship(manager)
-        # create_stayed_at_relationship(manager)
-        # create_reviewed_relationship(manager)
-        # create_located_in_relationship(manager)
-        # create_located_in_city_country_relationship(manager)
-        # create_needs_visa_relationship(manager)
+        create_wrote_relationship(manager)
+        create_from_country_relationship(manager)
+        create_stayed_at_relationship(manager)
+        create_reviewed_relationship(manager)
+        create_located_in_relationship(manager)
+        create_located_in_city_country_relationship(manager)
+        create_needs_visa_relationship(manager)
 
     finally:
+        manager.close()
         print("Closed")
 
 

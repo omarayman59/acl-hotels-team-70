@@ -58,23 +58,6 @@ export const useSend = () => {
       const { tempId, chatId } = context;
       abortControllerRef.current = null;
 
-      // Format the response message
-      let responseContent = "";
-
-      if (data.success && data.results && data.results.length > 0) {
-        const formattedResults = data.results
-          .map((result, index) => `${index + 1}. ${result["h.name"]}`)
-          .join("\n");
-
-        responseContent = `Found ${data.result_count} result(s):\n\n${formattedResults}`;
-      } else if (data.success && data.result_count === 0) {
-        responseContent = "No results found for your query.";
-      } else if (data.error) {
-        responseContent = `Problem: ${data.error}`;
-      } else {
-        responseContent = "Query completed successfully.";
-      }
-
       // Replace the temporary "thinking" message with the actual response
       setCurrentChat((prev) => {
         if (prev.id !== chatId) return prev;
@@ -83,7 +66,7 @@ export const useSend = () => {
           ...prev,
           messages: prev.messages.map((msg) =>
             msg.id === tempId
-              ? { ...msg, content: responseContent, createdAt: new Date() }
+              ? { ...msg, content: data.response, createdAt: new Date() }
               : msg
           ),
         };

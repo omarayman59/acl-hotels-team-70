@@ -55,11 +55,16 @@ const ChatsProvider = ({ children }: { children: React.ReactNode }) => {
     setChats((prev) => {
       const filteredChats = prev.filter((chat) => chat.id !== chatId);
 
-      // If we deleted all chats or the current chat, create a new one
-      if (filteredChats.length === 0 || chatId === currentChat.id) {
+      // If there are no chats left after deletion, create a new one
+      if (filteredChats.length === 0) {
         const newChat = createNewChat();
         setCurrentChat(newChat);
         return [newChat];
+      }
+
+      // If the chat being deleted is the current chat, switch to the first remaining chat
+      if (chatId === currentChat.id) {
+        setCurrentChat(filteredChats[0]);
       }
 
       return filteredChats;
