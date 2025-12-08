@@ -14,6 +14,7 @@ intents = {
         "good",
         "average",
         "poor",
+        "top",
     ],
     "location": [
         "location",

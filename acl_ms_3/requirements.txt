@@ -3,4 +3,5 @@ flask-cors==4.0.0
 neo4j==5.15.0
 spacy==3.7.2
 requests==2.31.0
+python-dotenv==1.0.0
 

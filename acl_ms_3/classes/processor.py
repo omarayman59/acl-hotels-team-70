@@ -45,6 +45,9 @@ class Preprocessor:
         values = {}
         prompt_lower = self.prompt.lower()
 
+        values["city"] = []
+        values["country"] = []
+
         # Extract locations (cities and countries)
         for entity_text, entity_type in self.entities.items():
             if entity_type == "Location":
@@ -52,11 +55,9 @@ class Preprocessor:
 
                 # Check if it's a known city or country
                 if entity_lower in CITIES:
-                    if not values.get("city"):
-                        values["city"] = entity_text.capitalize()
+                    values["city"].append(entity_text.capitalize())
                 elif entity_lower in COUNTRIES:
-                    if not values.get("country"):
-                        values["country"] = entity_text.capitalize()
+                    values["country"].append(entity_text.capitalize())
 
         # Extract numbers (for ratings, limits, etc.)
         numbers = re.findall(r"\b\d+(?:\.\d+)?\b", self.prompt)
@@ -82,7 +83,7 @@ class Preprocessor:
                     values["rating_num"] = rating
                 break
 
-        values["limit_num"] = 10
+        values["limit_num"] = 100
 
         limit_match = re.search(r"(?:top|first|show|limit)\s+(\d+)", prompt_lower)
         if limit_match:

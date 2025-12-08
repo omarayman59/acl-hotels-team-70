@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional
 queries = [
     # Query 1: Hotels by rating and optional location
     {
-        "query": """MATCH (h:Hotel)-[:LOCATED_IN]->(c:City)-[:LOCATED_IN]->(co:Country) WHERE ($rating_num IS NULL OR h.average_reviews_score >= $rating_num) AND ($city IS NULL OR c.name = $city) AND ($country IS NULL OR co.name = $country) RETURN h.name ORDER BY h.average_reviews_score DESC LIMIT $limit_num""",
+        "query": """MATCH (h:Hotel)-[:LOCATED_IN]->(c:City)-[:LOCATED_IN]->(co:Country) WHERE ($rating_num IS NULL OR h.average_reviews_score >= $rating_num) AND ($city IS NULL OR c.name IN $city) AND ($country IS NULL OR co.name IN $country) RETURN h ORDER BY h.average_reviews_score DESC LIMIT $limit_num""",
         "intents": {
             "required": ["rating"],
             "optional": ["location"],
@@ -11,7 +11,7 @@ queries = [
     },
     # Query 2: Hotels by city and/or country
     {
-        "query": """MATCH (h:Hotel)-[:LOCATED_IN]->(c:City)-[:LOCATED_IN]->(co:Country) WHERE ($city IS NULL OR c.name = $city) AND ($country IS NULL OR co.name = $country) RETURN h.name LIMIT $limit_num""",
+        "query": """MATCH (h:Hotel)-[:LOCATED_IN]->(c:City)-[:LOCATED_IN]->(co:Country) WHERE ($city IS NULL OR c.name IN $city) AND ($country IS NULL OR co.name IN $country) RETURN h LIMIT $limit_num""",
         "intents": {
             "required": ["location"],
             "optional": [],
@@ -19,7 +19,7 @@ queries = [
     },
     # Query 3: Visa information by country and type
     {
-        "query": """MATCH (v:Visa) WHERE v.to_country = $country AND ($type IS NULL OR v.visa_type = $type) RETURN v LIMIT $limit_num""",
+        "query": """MATCH (v:Visa) WHERE ($country IS NULL OR v.to_country IN $country) OR ($country IS NULL OR v.from_country IN $country) AND ($type IS NULL OR v.visa_type = $type) RETURN v LIMIT $limit_num""",
         "intents": {
             "required": ["visa", "location"],
             "optional": ["type"],
@@ -27,7 +27,7 @@ queries = [
     },
     # Query 4: Hotels by traveler demographics
     {
-        "query": """MATCH (t:Traveller)-[:STAYED_AT]->(h:Hotel) WHERE ($age_group IS NULL OR t.age_group = $age_group) AND ($gender IS NULL OR t.gender = $gender) RETURN DISTINCT h.name LIMIT $limit_num""",
+        "query": """MATCH (t:Traveller)-[:STAYED_AT]->(h:Hotel) WHERE ($age_group IS NULL OR t.age_group = $age_group) AND ($gender IS NULL OR t.gender = $gender) RETURN DISTINCT h LIMIT $limit_num""",
         "intents": {
             "required": ["demographics"],
             "optional": [],
@@ -35,7 +35,7 @@ queries = [
     },
     # Query 5: Hotels by cleanliness rating
     {
-        "query": """MATCH (h:Hotel) WHERE h.cleanliness_base >= $num RETURN h.name ORDER BY h.cleanliness_base DESC LIMIT $limit_num""",
+        "query": """MATCH (h:Hotel) WHERE h.cleanliness_base >= $num RETURN h.name ORDER BY h DESC LIMIT $limit_num""",
         "intents": {
             "required": ["cleanliness"],
             "optional": [],
@@ -43,7 +43,7 @@ queries = [
     },
     # Query 6: Hotels by value for money rating
     {
-        "query": """MATCH (h:Hotel) WHERE h.value_for_money_base >= $num RETURN h.name ORDER BY h.value_for_money_base DESC LIMIT $limit_num""",
+        "query": """MATCH (h:Hotel) WHERE h.value_for_money_base >= $num RETURN h.name ORDER BY h DESC LIMIT $limit_num""",
         "intents": {
             "required": ["value_for_money"],
             "optional": [],
@@ -51,7 +51,7 @@ queries = [
     },
     # Query 7: Hotels by location rating
     {
-        "query": """MATCH (h:Hotel) WHERE h.location_base >= $num RETURN h.name ORDER BY h.location_base DESC LIMIT $limit_num""",
+        "query": """MATCH (h:Hotel) WHERE h.location_base >= $num RETURN h.name ORDER BY h DESC LIMIT $limit_num""",
         "intents": {
             "required": ["location_rating"],
             "optional": [],
@@ -59,7 +59,7 @@ queries = [
     },
     # Query 8: Hotels by comfort rating
     {
-        "query": """MATCH (h:Hotel) WHERE h.comfort_base >= $num RETURN h.name ORDER BY h.comfort_base DESC LIMIT $limit_num""",
+        "query": """MATCH (h:Hotel) WHERE h.comfort_base >= $num RETURN h.name ORDER BY h DESC LIMIT $limit_num""",
         "intents": {
             "required": ["comfort"],
             "optional": [],
@@ -67,7 +67,7 @@ queries = [
     },
     # Query 9: Hotels by facilities rating
     {
-        "query": """MATCH (h:Hotel) WHERE h.facilities_base >= $num RETURN h.name ORDER BY h.facilities_base DESC LIMIT $limit_num""",
+        "query": """MATCH (h:Hotel) WHERE h.facilities_base >= $num RETURN h.name ORDER BY h DESC LIMIT $limit_num""",
         "intents": {
             "required": ["facilities"],
             "optional": [],
@@ -75,7 +75,7 @@ queries = [
     },
     # Query 10: Hotels by staff rating
     {
-        "query": """MATCH (h:Hotel) WHERE h.staff_base >= $num RETURN h.name ORDER BY h.staff_base DESC LIMIT $limit_num""",
+        "query": """MATCH (h:Hotel) WHERE h.staff_base >= $num RETURN h.name ORDER BY h DESC LIMIT $limit_num""",
         "intents": {
             "required": ["staff"],
             "optional": [],
@@ -116,7 +116,7 @@ def _populate_query_parameters(query: str, parameters: Dict[str, Any]) -> str:
     populated_query = query
 
     param_defaults = {
-        "limit_num": 10,
+        "limit_num": 100,
         "rating_num": None,
         "num": None,
         "city": None,
@@ -136,6 +136,15 @@ def _populate_query_parameters(query: str, parameters: Dict[str, Any]) -> str:
             if param_value is None:
                 # Keep as NULL for Cypher query
                 populated_query = populated_query.replace(placeholder, "NULL")
+            elif isinstance(param_value, list):
+                # Convert list to Cypher list format: ['item1', 'item2']
+                if param_value:
+                    quoted_items = [f"'{item}'" for item in param_value]
+                    list_str = f"[{', '.join(quoted_items)}]"
+                    populated_query = populated_query.replace(placeholder, list_str)
+                else:
+                    # Empty list treated as NULL
+                    populated_query = populated_query.replace(placeholder, "NULL")
             elif isinstance(param_value, str):
                 # Quote string values
                 populated_query = populated_query.replace(
