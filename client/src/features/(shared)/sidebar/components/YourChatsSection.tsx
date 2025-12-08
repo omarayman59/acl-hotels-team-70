@@ -31,7 +31,7 @@ export const YourChatsSection = () => {
   if (!isExpanded) return null;
 
   return (
-    <div className="mt-4">
+    <>
       <SidebarGroupLabel
         className="group gap-1"
         onClick={() => setOpen((prev) => !prev)}
@@ -46,7 +46,7 @@ export const YourChatsSection = () => {
       <SidebarMenu>
         {open &&
           chats.map((chat) => (
-            <SidebarMenuItem key={chat.id} className="group">
+            <SidebarMenuItem key={chat.id} className="group/item">
               <div className="relative w-full">
                 <SidebarMenuButton
                   tooltip={chat.title}
@@ -63,7 +63,7 @@ export const YourChatsSection = () => {
             </SidebarMenuItem>
           ))}
       </SidebarMenu>
-    </div>
+    </>
   );
 };
 
@@ -79,7 +79,7 @@ const ChatActions = ({ chatId }: { chatId: string }) => {
         <button
           className={cn(
             "transition-opacity cursor-pointer p-1 rounded ring-0! group-data-[active=true]:bg-sidebar-accent group-data-[active=true]:text-sidebar-accent-foreground",
-            open ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+            open ? "opacity-100" : "opacity-0 group-hover/item:opacity-100"
           )}
           onClick={(e) => e.stopPropagation()}
         >

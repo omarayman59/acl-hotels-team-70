@@ -14,6 +14,7 @@ export function getNavigationItems(): NavigationItemType[] {
       id: "new_chat",
       title: "New chat",
       icon: SquarePen,
+      hoverText: "Ctrl + Shift + O",
       action: () => {
         handleCreateNewChat();
       },

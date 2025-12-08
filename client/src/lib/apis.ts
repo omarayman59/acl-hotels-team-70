@@ -12,13 +12,20 @@ export interface QueryResponse {
   error_type?: string;
 }
 
-async function processQuery(prompt: string): Promise<QueryResponse> {
+async function processQuery({
+  prompt,
+  signal,
+}: {
+  prompt: string;
+  signal: AbortSignal;
+}): Promise<QueryResponse> {
   const response = await fetch(`${API_BASE_URL}/api/query`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ prompt }),
+    signal,
   });
 
   const data = await response.json();

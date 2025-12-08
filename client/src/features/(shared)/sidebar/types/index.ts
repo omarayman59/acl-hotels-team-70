@@ -9,5 +9,6 @@ export type NavigationItemType = {
   id: string;
   title: string;
   icon: LucideIconType;
+  hoverText?: string;
   action: () => void;
 };

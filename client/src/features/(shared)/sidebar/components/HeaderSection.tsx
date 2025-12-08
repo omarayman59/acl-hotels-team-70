@@ -2,11 +2,17 @@
 
 import {
   SidebarHeader,
+  SidebarMenuItem,
+  SidebarMenuButton,
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
 
+import { getNavigationItems } from "../utils/helpers";
+
 export const HeaderSection = () => {
+  const navigationItems = getNavigationItems();
+
   const { state } = useSidebar();
   const isExpanded = state === "expanded";
 
@@ -29,6 +35,26 @@ export const HeaderSection = () => {
           </div>
         </div>
       )}
+
+      {navigationItems.map((item) => (
+        <SidebarMenuItem key={item.id} className="mt-4">
+          <SidebarMenuButton tooltip={item.title} onClick={item.action}>
+            <div className="w-full flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 w-[60%]">
+                <span className="flex items-center justify-center w-6">
+                  {item.icon && <item.icon className="size-4 mx-auto" />}
+                </span>
+                <span>{item.title}</span>
+              </div>
+              {isExpanded && item.hoverText && (
+                <span className="text-xs text-muted-foreground opacity-0 group-hover/menu-item:opacity-100 transition-opacity">
+                  {item.hoverText}
+                </span>
+              )}
+            </div>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      ))}
     </SidebarHeader>
   );
 };

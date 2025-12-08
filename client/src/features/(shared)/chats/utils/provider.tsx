@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useRef, useState } from "react";
 
 import { type ChatsContextType, type ChatType } from "../types";
 
@@ -22,8 +22,14 @@ const ChatsProvider = ({ children }: { children: React.ReactNode }) => {
   const initialChat = createNewChat();
   const [currentChat, setCurrentChat] = useState<ChatType>(initialChat);
   const [chats, setChats] = useState<ChatType[]>([initialChat]);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   function handleCreateNewChat() {
+    abortCheck();
+
+    // Clear thinking messages from the chat we're leaving
+    handleClearThinkingMessages(currentChat.id);
+
     const newChat = createNewChat();
     setCurrentChat(newChat);
 
@@ -37,6 +43,10 @@ const ChatsProvider = ({ children }: { children: React.ReactNode }) => {
   function handleSelectChat(chatId: string) {
     const selectedChat = chats.find((chat) => chat.id === chatId);
     if (selectedChat) {
+      abortCheck();
+
+      // Clear thinking messages from the chat we're leaving
+      handleClearThinkingMessages(currentChat.id);
       setCurrentChat(selectedChat);
     }
   }
@@ -83,11 +93,53 @@ const ChatsProvider = ({ children }: { children: React.ReactNode }) => {
     });
   }
 
+  // static method
+  function handleClearThinkingMessages(chatId: string) {
+    // Check if the chat has any thinking messages (system messages with "Thinking..." content)
+    const chat = chats.find((c) => c.id === chatId);
+    if (!chat) return;
+
+    const hasThinkingMessages = chat.messages.some(
+      (message) =>
+        message.role === "system" && message.content === "Thinking..."
+    );
+
+    if (!hasThinkingMessages) return;
+
+    // Update only thinking messages
+    const updatedMessages = chat.messages.map((message) =>
+      message.role === "system" && message.content === "Thinking..."
+        ? { ...message, content: "Problem: Could not process request" }
+        : message
+    );
+
+    setChats((prevChats) =>
+      prevChats.map((c) =>
+        c.id === chatId ? { ...c, messages: updatedMessages } : c
+      )
+    );
+
+    // Update currentChat if this is the current chat
+    if (currentChat.id === chatId) {
+      setCurrentChat((prev) => ({ ...prev, messages: updatedMessages }));
+    }
+  }
+
+  // static method
+  function abortCheck() {
+    // Abort any ongoing request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+  }
+
   return (
     <ChatsContext.Provider
       value={{
         currentChat,
         chats,
+        abortControllerRef,
         setCurrentChat,
         setChats,
         handleCreateNewChat,

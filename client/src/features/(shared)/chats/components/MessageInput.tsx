@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/input-group";
 
 import { SendIcon } from "lucide-react";
+import { useKeyDown } from "@/hooks/use-key-down";
 
 export const MessageInput = () => {
   const { currentChat, handleSendMessage: handleSendMessageAction } =
@@ -20,8 +21,10 @@ export const MessageInput = () => {
 
   const { mutate: sendMessage, isPending } = useSend();
 
+  const disableSend = !message.trim() || isPending;
+
   const handleSendMessage = useCallback(() => {
-    if (!message.trim()) return;
+    if (disableSend) return;
 
     handleSendMessageAction(message);
     sendMessage({ chatId: currentChat.id, message });
@@ -29,19 +32,10 @@ export const MessageInput = () => {
     setMessage("");
   }, [message, currentChat.id, handleSendMessageAction, sendMessage]);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        handleSendMessage();
-      }
-    };
-    document.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [handleSendMessage]);
+  useKeyDown({
+    keyComboCheck: (e) => e.key === "Enter" && !e.shiftKey,
+    action: handleSendMessage,
+  });
 
   return (
     <InputGroup className="h-12 bg-sidebar rounded-3xl ring-0! shadow-md px-2">
@@ -53,7 +47,7 @@ export const MessageInput = () => {
       <InputGroupButton
         className="size-9 bg-primary hover:bg-primary/90 rounded-full active:scale-103 transition-all duration-100"
         onClick={handleSendMessage}
-        disabled={!message.trim() || isPending}
+        disabled={disableSend}
       >
         <SendIcon className="size-5 text-white" />
       </InputGroupButton>

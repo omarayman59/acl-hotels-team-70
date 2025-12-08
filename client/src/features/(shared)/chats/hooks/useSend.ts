@@ -13,10 +13,14 @@ interface UseSendProps {
 }
 
 export const useSend = () => {
-  const { setCurrentChat, setChats } = useChats();
+  const { abortControllerRef, setCurrentChat, setChats } = useChats();
 
   return useMutation({
-    mutationFn: ({ chatId: _, message }: UseSendProps) => processQuery(message),
+    mutationFn: ({ chatId: _, message }: UseSendProps) => {
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+      return processQuery({ prompt: message, signal: controller.signal });
+    },
 
     onMutate: ({ chatId }: UseSendProps) => {
       const tempId = generateId();
@@ -52,6 +56,7 @@ export const useSend = () => {
       if (!context) return;
 
       const { tempId, chatId } = context;
+      abortControllerRef.current = null;
 
       // Format the response message
       let responseContent = "";
@@ -65,7 +70,7 @@ export const useSend = () => {
       } else if (data.success && data.result_count === 0) {
         responseContent = "No results found for your query.";
       } else if (data.error) {
-        responseContent = `Error: ${data.error}`;
+        responseContent = `Problem: ${data.error}`;
       } else {
         responseContent = "Query completed successfully.";
       }
@@ -95,6 +100,12 @@ export const useSend = () => {
       if (!context) return;
 
       const { tempId, chatId } = context;
+      abortControllerRef.current = null;
+
+      // If the request was aborted, don't show an error message
+      if (error.name === "AbortError") {
+        return;
+      }
 
       setCurrentChat((prev) => {
         if (prev.id !== chatId) return prev;
@@ -105,7 +116,7 @@ export const useSend = () => {
             msg.id === tempId
               ? {
                   ...msg,
-                  content: `Error: ${error.message}`,
+                  content: `Problem: ${error.message}`,
                   createdAt: new Date(),
                 }
               : msg

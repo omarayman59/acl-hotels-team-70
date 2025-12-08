@@ -15,6 +15,7 @@ export type ChatType = {
 export interface ChatsContextType {
   currentChat: ChatType;
   chats: ChatType[];
+  abortControllerRef: React.MutableRefObject<AbortController | null>;
   setCurrentChat: React.Dispatch<React.SetStateAction<ChatType>>;
   setChats: React.Dispatch<React.SetStateAction<ChatType[]>>;
   handleCreateNewChat: () => void;
