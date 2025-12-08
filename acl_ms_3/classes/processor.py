@@ -2,7 +2,6 @@ import re
 from typing import Any, Dict, List
 
 import spacy
-
 from data import CITIES, COUNTRIES
 from intents import intents
 
@@ -23,7 +22,6 @@ def get_entity_types(text: str) -> Dict[str, str]:
 
     for ent in doc.ents:
         # Map spaCy entity labels to more intuitive names
-        print("ent", ent.label_, ent)
         entity_type = _map_entity_label(ent.label_)
         entity_map[ent.text] = entity_type
 

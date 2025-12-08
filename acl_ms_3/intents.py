@@ -1,5 +1,5 @@
 intents = {
-    "rating: [
+    "rating": [
         "rating",
         "overall score",
         "rated",

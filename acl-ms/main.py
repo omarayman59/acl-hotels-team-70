@@ -201,7 +201,7 @@ def create_needs_visa_relationship(manager: Neo4jManager):
 
 
 def main():
-    config = read_config("config.txt")
+    config = read_config("../config.txt")
 
     URI = config.get("URI")
     USERNAME = config.get("USERNAME")
