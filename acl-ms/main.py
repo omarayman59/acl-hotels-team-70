@@ -53,17 +53,17 @@ def data_cleaning():
             "average_reviews_score",
         ]
     ].copy()
-    hotel_df = hotel_df.rename(columns={"hotel_name": "name"})
+    # Keep hotel_name as hotel_name (no renaming)
 
     city_df = df_hotels[["city"]].copy()
-    city_df = city_df.rename(columns={"city": "name"})
+    city_df = city_df.rename(columns={"city": "city_name"})
 
     hotels_countries = df_hotels[["country"]].drop_duplicates()
     users_countries = df_users[["country"]].drop_duplicates()
 
     country_df = pd.concat([hotels_countries, users_countries], ignore_index=True)
     country_df = country_df.drop_duplicates().reset_index(drop=True)
-    country_df = country_df.rename(columns={"country": "name"})
+    country_df = country_df.rename(columns={"country": "country_name"})
 
     review_df = df_reviews[
         [
@@ -114,7 +114,7 @@ def create_from_country_relationship(manager: Neo4jManager):
         from_key="user_id",
         from_column="user_id",
         to_label="Country",
-        to_key="name",
+        to_key="country_name",
         to_column="country",
         relationship_type="FROM_COUNTRY",
     )
@@ -168,7 +168,7 @@ def create_located_in_relationship(manager: Neo4jManager):
         from_key="hotel_id",
         from_column="hotel_id",
         to_label="City",
-        to_key="name",
+        to_key="city_name",
         to_column="city",
         relationship_type="LOCATED_IN",
     )
@@ -181,10 +181,10 @@ def create_located_in_city_country_relationship(manager: Neo4jManager):
     manager.create_relationships_from_dataframe(
         df=df_hotels,
         from_label="City",
-        from_key="name",
+        from_key="city_name",
         from_column="city",
         to_label="Country",
-        to_key="name",
+        to_key="country_name",
         to_column="country",
         relationship_type="LOCATED_IN",
     )
@@ -199,10 +199,10 @@ def create_needs_visa_relationship(manager: Neo4jManager):
     manager.create_relationships_from_dataframe(
         df=df_visa_required,
         from_label="Country",
-        from_key="name",
+        from_key="country_name",
         from_column="from",
         to_label="Country",
-        to_key="name",
+        to_key="country_name",
         to_column="to",
         relationship_type="NEEDS_VISA",
         property_columns=["visa_type"],

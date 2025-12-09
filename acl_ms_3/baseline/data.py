@@ -23,7 +23,6 @@ def _load_location_data() -> tuple[Set[str], Set[str]]:
     return cities, countries
 
 
-# Load location data once at module level
 CITIES, COUNTRIES = _load_location_data()
 
 __all__ = ["CITIES", "COUNTRIES"]
