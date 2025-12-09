@@ -55,6 +55,9 @@ const ChatsProvider = ({ children }: { children: React.ReactNode }) => {
     setChats((prev) => {
       const filteredChats = prev.filter((chat) => chat.id !== chatId);
 
+      console.log("chats:", prev);
+      console.log("filteredChats", filteredChats);
+
       // If there are no chats left after deletion, create a new one
       if (filteredChats.length === 0) {
         const newChat = createNewChat();
