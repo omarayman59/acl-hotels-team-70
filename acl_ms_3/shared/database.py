@@ -21,18 +21,23 @@ def load_config() -> Dict[str, str]:
     return config
 
 
-DIMENSION_CONSTANT: int = 768
+DIMENSION_BY_MODEL = {"SBERT": 768, "MiniLM": 384}
 BATCH_SIZE_CONSTANT: int = 100
+KEY_NAME_CONSTANT = {"SBERT": "embedding", "MiniLM": "embedding_minilm"}
 
 
 class Neo4jConnection:
-    def __init__(self):
+    # available models: SBERT or MiniLM
+    def __init__(self, model_name: str = "SBERT"):
         config = load_config()
         self.driver = GraphDatabase.driver(
             uri=config.get("URI"),
             auth=(config.get("USERNAME"), config.get("PASSWORD")),
         )
-        self.embedder = Embeddor()
+        self.embedder = Embeddor(model_name)
+        self.model_name = model_name
+        self.key_name = KEY_NAME_CONSTANT[model_name]
+        self.dimension = DIMENSION_BY_MODEL[model_name]
 
     def close(self):
         if self.driver:
@@ -43,7 +48,7 @@ class Neo4jConnection:
             return {
                 key: self._remove_embeddings_recursive(value)
                 for key, value in obj.items()
-                if key != "embedding"
+                if key not in KEY_NAME_CONSTANT.values()
             }
         elif isinstance(obj, list):
             return [self._remove_embeddings_recursive(item) for item in obj]
@@ -121,11 +126,11 @@ class Neo4jConnection:
     def store_node_embeddings_batch(
         self, node_embeddings: List[Tuple[int, List[float]]]
     ) -> int:
-        query = """
+        query = f"""
         UNWIND $batch as item
         MATCH (n)
         WHERE id(n) = item.node_id
-        SET n.embedding = item.embedding
+        SET n.{self.key_name} = item.embedding
         """
 
         try:
@@ -146,11 +151,11 @@ class Neo4jConnection:
     def store_relationship_embeddings_batch(
         self, relationship_embeddings: List[Tuple[int, List[float]]]
     ) -> int:
-        query = """
+        query = f"""
         UNWIND $batch as item
         MATCH ()-[r]->()
         WHERE id(r) = item.rel_id
-        SET r.embedding = item.embedding
+        SET r.{self.key_name} = item.embedding
         """
 
         try:
@@ -185,7 +190,10 @@ class Neo4jConnection:
         created_indices = []
 
         for label in labels:
-            current_index_name = f"node_embeddings_{label}"
+            if self.model_name == "SBERT":
+                current_index_name = f"node_embeddings_{label}"
+            else:
+                current_index_name = f"node_embeddings_minilm_{label}"
 
             # drop the index if it exists
             try:
@@ -202,10 +210,10 @@ class Neo4jConnection:
                 create_query = f"""
                 CREATE VECTOR INDEX {current_index_name} IF NOT EXISTS
                 FOR (n:{label})
-                ON (n.embedding)
+                ON (n.{self.key_name})
                 OPTIONS {{
                     indexConfig: {{
-                        `vector.dimensions`: {DIMENSION_CONSTANT},
+                        `vector.dimensions`: {self.dimension},
                         `vector.similarity_function`: 'cosine'
                     }}
                 }}
@@ -217,7 +225,7 @@ class Neo4jConnection:
                 print(f"  ✗ Error creating vector index for {label}: {e}")
 
         print(
-            f"\n✓ Created {len(created_indices)} vector indices with dimension {DIMENSION_CONSTANT}"
+            f"\n✓ Created {len(created_indices)} vector indices with dimension {self.dimension}"
         )
 
     def create_relationship_vector_index(self):
@@ -230,7 +238,10 @@ class Neo4jConnection:
         created_indices = []
 
         for rel_type in rel_types:
-            index_name = f"rel_embeddings_{rel_type}"
+            if self.model_name == "SBERT":
+                index_name = f"rel_embeddings_{rel_type}"
+            else:
+                index_name = f"rel_embeddings_minilm_{rel_type}"
 
             # Drop the index if it exists
             try:
@@ -245,10 +256,10 @@ class Neo4jConnection:
                 create_query = f"""
                 CREATE VECTOR INDEX {index_name} IF NOT EXISTS
                 FOR ()-[r:{rel_type}]-()
-                ON (r.embedding)
+                ON (r.{self.key_name})
                 OPTIONS {{
                     indexConfig: {{
-                        `vector.dimensions`: {DIMENSION_CONSTANT},
+                        `vector.dimensions`: {self.dimension},
                         `vector.similarity_function`: 'cosine'
                     }}
                 }}
@@ -262,7 +273,7 @@ class Neo4jConnection:
                 print(f"  ✗ Error creating vector index for {rel_type}: {e}")
 
         print(
-            f"\n✓ Created {len(created_indices)} relationship vector indices with dimension {DIMENSION_CONSTANT}"
+            f"\n✓ Created {len(created_indices)} relationship vector indices with dimension {self.dimension}"
         )
 
     def embed_nodes(self):
@@ -442,9 +453,9 @@ class Neo4jConnection:
         print("=" * 60)
 
         # Count nodes with embeddings (excluding RelationshipType metadata nodes)
-        query = """
+        query = f"""
         MATCH (n)
-        WHERE n.embedding IS NOT NULL AND NOT 'RelationshipType' IN labels(n)
+        WHERE n.{self.key_name} IS NOT NULL AND NOT 'RelationshipType' IN labels(n)
         RETURN labels(n)[0] as label, count(n) as count
         ORDER BY count DESC
         """
@@ -461,10 +472,10 @@ class Neo4jConnection:
         print(f"\nTotal nodes with embeddings: {total}")
 
         # Show a sample embedding
-        sample_query = """
+        sample_query = f"""
         MATCH (n)
-        WHERE n.embedding IS NOT NULL AND NOT 'RelationshipType' IN labels(n)
-        RETURN labels(n)[0] as label, properties(n) as props, size(n.embedding) as embedding_size
+        WHERE n.{self.key_name} IS NOT NULL AND NOT 'RelationshipType' IN labels(n)
+        RETURN labels(n)[0] as label, properties(n) as props, size(n.{self.key_name}) as embedding_size
         LIMIT 1
         """
 
@@ -482,9 +493,9 @@ class Neo4jConnection:
         print("=" * 60)
 
         # Count relationships with embeddings by type
-        query = """
+        query = f"""
         MATCH ()-[r]->()
-        WHERE r.embedding IS NOT NULL
+        WHERE r.{self.key_name} IS NOT NULL
         RETURN type(r) as rel_type, count(r) as count
         ORDER BY count DESC
         """
@@ -506,11 +517,11 @@ class Neo4jConnection:
         print(f"\nTotal relationships with embeddings: {total}")
 
         # Show a sample embedding
-        sample_query = """
+        sample_query = f"""
         MATCH (start)-[r]->(end)
-        WHERE r.embedding IS NOT NULL
+        WHERE r.{self.key_name} IS NOT NULL
         RETURN type(r) as rel_type, 
-               size(r.embedding) as embedding_size,
+               size(r.{self.key_name}) as embedding_size,
                labels(start)[0] as start_label,
                labels(end)[0] as end_label
         LIMIT 1
@@ -535,7 +546,10 @@ class Neo4jConnection:
             if label == "RelationshipType":  # Skip metadata nodes
                 continue
 
-            index_name = f"node_embeddings_{label}"
+            if self.model_name == "SBERT":
+                index_name = f"node_embeddings_{label}"
+            else:
+                index_name = f"node_embeddings_minilm_{label}"
 
             query = """
             CALL db.index.vector.queryNodes($index_name, $limit, $embedding)
@@ -575,7 +589,10 @@ class Neo4jConnection:
         rel_types = self.get_all_relationship_types()
 
         for rel_type in rel_types:
-            index_name = f"rel_embeddings_{rel_type}"
+            if self.model_name == "SBERT":
+                index_name = f"rel_embeddings_{rel_type}"
+            else:
+                index_name = f"rel_embeddings_minilm_{rel_type}"
 
             query = """
             CALL db.index.vector.queryRelationships($index_name, $limit, $embedding)

@@ -15,13 +15,18 @@ load_dotenv()
 
 
 class ComparisonCycle(Neo4jConnection):
-    def __init__(self, prompt: str):
-        super().__init__()
+    # options: Dict[str, Any] = {"selection": ["semantic", "baseline"], "LLMModel": "gpt-5-mini-2025-08-07" | "gpt-4.1", "embeddingModel": "SBERT" | "MiniLM"}
+    def __init__(self, prompt: str, options: Dict[str, Any]):
+        self.embeddingModel = options.get("embeddingModel") or "SBERT"
+        self.LLMModel = options.get("LLMModel") or "gpt-5-mini-2025-08-07"
+        self.selection = options.get("selection") or ["semantic", "baseline"]
+
+        super().__init__(self.embeddingModel)
         self.baseline_processor = Preprocessor(prompt)
         self.prompt = prompt
 
     # baseline cycle
-    def baseline_cycle(self) -> List[Any]:
+    def baseline_cycle(self) -> Dict[str, Any]:
         # Step 1: extract feature values and intents using Preprocessor
         detected_intents = self.baseline_processor.map_intents()
         parameters = self.baseline_processor.get_query_parameters()
@@ -41,21 +46,20 @@ class ComparisonCycle(Neo4jConnection):
         else:
             print("No matching query found for the detected intents and parameters")
 
-        return results
-        # return {
-        #     # "detected_intents": detected_intents,
-        #     # "parameters": parameters,
-        #     # "cypher_query": cypher_query,
-        #     "results": results,
-        #     # "num_results": len(results),
-        # }
+        return {
+            "detected_intents": detected_intents,
+            "detected_parameters": parameters,
+            "cypher_query": cypher_query,
+            "results": results,
+            # "num_results": len(results),
+        }
 
     # semantic cycle
     def _semantic_embed_prompt(self) -> List[float]:
         embeddings = self.embedder.generate_embeddings_batch([self.prompt])
         return embeddings[0] if embeddings else []
 
-    def semantic_cycle(self) -> Dict[str, Any]:
+    def semantic_cycle(self) -> List[Dict[str, Any]]:
         embedding = self._semantic_embed_prompt()
         closest_nodes = self.get_closest_nodes(embedding)
         closest_relationships = self.get_closest_relationships(embedding)
@@ -73,10 +77,11 @@ class ComparisonCycle(Neo4jConnection):
                 "error": "OPENAI_API_KEY not found in environment variables",
             }
 
-        results = {
-            "baseline": self.baseline_cycle(),
-            "semantic": self.semantic_cycle(),
-        }
+        results = {}
+        if "baseline" in self.selection:
+            results["baseline"] = self.baseline_cycle()
+        if "semantic" in self.selection:
+            results["semantic"] = self.semantic_cycle()
 
         system_prompt = """You are an intelligent search assistant. Your task is to analyze the results from two different search models (baseline rule-based and semantic search) and provide the most relevant recommendations based ONLY on the given data.
 
@@ -107,25 +112,19 @@ Your response should include:
 2. Dont put reasons on why you removed anything just answer the query.
 3. DO NOT EXPLAIN YOUR REASONING.
 4. DO NOT PUT ANYTHING ELSE IN YOUR RESPONSE.
-5. DO NOT PUT ANYTHING ELSE IN YOUR RESPONSE.
-6. DO NOT PUT ANYTHING ELSE IN YOUR RESPONSE.
-7. DO NOT PUT ANYTHING ELSE IN YOUR RESPONSE.
-8. DO NOT PUT ANYTHING ELSE IN YOUR RESPONSE.
-9. DO NOT PUT ANYTHING ELSE IN YOUR RESPONSE.
-10. DO NOT PUT ANYTHING ELSE IN YOUR RESPONSE.
 
 Format your response as a structured, helpful analysis that directly addresses the user's query."""
 
-        # User prompt with context
+        # user prompt with context
         user_prompt = f"""User Prompt: "{self.prompt}"
 
 Available Results:
 
 BASELINE MODEL RESULTS:
-- Results: {results['baseline']}
+- Results: {results.get('baseline', {}).get('results', 'Not requested')}
 
 SEMANTIC SEARCH MODEL RESULTS:
-- Results: {results['semantic']}
+- Results: {results.get('semantic', 'Not requested')}
 
 Based ONLY on the above data, provide the user with an appropriate response to their query."""
 
@@ -135,9 +134,10 @@ Based ONLY on the above data, provide the user with an appropriate response to t
             "Authorization": f"Bearer {api_key}",
         }
 
+        print(f"LLM Model used: {self.LLMModel}")
+
         data = {
-            "model": "gpt-5-mini-2025-08-07",
-            # "model": "gpt-4.1",
+            "model": self.LLMModel,
             "messages": [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
@@ -165,11 +165,15 @@ Based ONLY on the above data, provide the user with an appropriate response to t
 
             return {
                 "error": None,
+                "success": True,
                 "raw_response": llm_response,
-                # "context_sent": user_prompt,
                 "rag_response": {
-                    "semantic_response": results["semantic"],
-                    "baseline_response": results["baseline"],
+                    "semantic_response": (
+                        results["semantic"] if "semantic" in results else None
+                    ),
+                    "baseline_response": (
+                        results["baseline"] if "baseline" in results else None
+                    ),
                 },
                 "elapsed_time": elapsed_time,
                 "tokens_used": {
@@ -183,18 +187,42 @@ Based ONLY on the above data, provide the user with an appropriate response to t
             error_body = e.read().decode("utf-8")
             return {
                 "error": f"HTTP Error {e.code}: {error_body}",
+                "success": False,
                 "raw_response": None,
-                # "context_sent": user_prompt,
+                "rag_response": {
+                    "semantic_response": (
+                        results["semantic"] if "semantic" in results else None
+                    ),
+                    "baseline_response": (
+                        results["baseline"] if "baseline" in results else None
+                    ),
+                },
             }
         except urllib.error.URLError as e:
             return {
                 "error": f"URL Error: {str(e.reason)}",
+                "success": False,
                 "raw_response": None,
-                # "context_sent": user_prompt,
+                "rag_response": {
+                    "semantic_response": (
+                        results["semantic"] if "semantic" in results else None
+                    ),
+                    "baseline_response": (
+                        results["baseline"] if "baseline" in results else None
+                    ),
+                },
             }
         except Exception as e:
             return {
                 "error": f"Error calling OpenAI API: {str(e)}",
+                "success": False,
                 "raw_response": None,
-                # "context_sent": user_prompt,
+                "rag_response": {
+                    "semantic_response": (
+                        results["semantic"] if "semantic" in results else None
+                    ),
+                    "baseline_response": (
+                        results["baseline"] if "baseline" in results else None
+                    ),
+                },
             }

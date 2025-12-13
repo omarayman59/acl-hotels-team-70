@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
+import { useKeyDown } from "@/hooks/use-key-down";
 import { useChats } from "../utils/provider";
 import { useSend } from "../hooks/useSend";
 
@@ -11,7 +12,6 @@ import {
 } from "@/components/ui/input-group";
 
 import { SendIcon } from "lucide-react";
-import { useKeyDown } from "@/hooks/use-key-down";
 
 export const MessageInput = () => {
   const { currentChat, handleSendMessage: handleSendMessageAction } =

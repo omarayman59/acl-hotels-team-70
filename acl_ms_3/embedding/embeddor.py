@@ -1,7 +1,8 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 import torch
+from sentence_transformers import SentenceTransformer
 from transformers import AutoModel, AutoTokenizer
 
 node_descriptions = {
@@ -24,15 +25,36 @@ relationship_descriptions = {
 
 
 class Embeddor:
-    def __init__(self):
-        self.tokenizer = AutoTokenizer.from_pretrained("Muennighoff/SBERT-base-nli-v2")
-        self.model = AutoModel.from_pretrained("Muennighoff/SBERT-base-nli-v2")
-        self.model.eval()
+    # available models: SBERT or MiniLM
+    SUPPORTED_MODELS = {
+        "SBERT": "Muennighoff/SBERT-base-nli-v2",
+        "MiniLM": "sentence-transformers/all-MiniLM-L6-v2",
+    }
 
-        # Move to GPU if available
+    def __init__(self, model_name: str = "SBERT"):
+        self.model_name = model_name
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+        if model_name == "SBERT":
+            self._init_sbert()
+        elif model_name == "MiniLM":
+            self._init_minilm()
+
+        print(f"✅ {model_name} embedding model loaded successfully on {self.device}")
+
+    def _init_sbert(self):
+        """Initialize SBERT model using transformers library."""
+        model_path = self.SUPPORTED_MODELS["SBERT"]
+        self.tokenizer = AutoTokenizer.from_pretrained(model_path)
+        self.model = AutoModel.from_pretrained(model_path)
+        self.model.eval()
         self.model.to(self.device)
-        print("model loaded successfully✅")
+
+    def _init_minilm(self):
+        """Initialize MiniLM model using sentence-transformers library."""
+        model_path = self.SUPPORTED_MODELS["MiniLM"]
+        self.model = SentenceTransformer(model_path, device=str(self.device))
+        self.tokenizer = None  # Not needed for sentence-transformers
 
     def generate_node_description(
         self, node_label: str, node_properties: Dict[str, Any]
@@ -50,9 +72,9 @@ class Embeddor:
     def generate_relationship_description(
         self,
         relationship_type: str,
-        relationship_properties: Dict[str, Any] = None,
-        start_node_properties: Dict[str, Any] = None,
-        end_node_properties: Dict[str, Any] = None,
+        relationship_properties: Optional[Dict[str, Any]] = None,
+        start_node_properties: Optional[Dict[str, Any]] = None,
+        end_node_properties: Optional[Dict[str, Any]] = None,
     ) -> str:
         template = relationship_descriptions.get(relationship_type)
 
@@ -74,7 +96,7 @@ class Embeddor:
             return template.format(**format_data)
         except KeyError as e:
             # If some keys are missing, return a partial description
-            return f"{relationship_type} relationship with available data"
+            return f"{relationship_type} relationship with available data (missing key: {e})"
 
     # perform mean pooling on token embeddings to get sentence embedding.
     def mean_pooling(self, model_output, attention_mask):
@@ -87,30 +109,44 @@ class Embeddor:
         )
 
     def generate_embeddings_batch(self, texts: List[str]) -> List[List[float]]:
-        # tokenize all texts
-        encoded_input = self.tokenizer(
-            texts, padding=True, truncation=True, max_length=512, return_tensors="pt"
-        ).to(self.device)
+        if self.model_name == "SBERT":
+            # tokenize all texts
+            encoded_input = self.tokenizer(
+                texts,
+                padding=True,
+                truncation=True,
+                max_length=512,
+                return_tensors="pt",
+            ).to(self.device)
 
-        # generate embeddings
-        with torch.no_grad():
-            model_output = self.model(**encoded_input)
+            # generate embeddings
+            with torch.no_grad():
+                model_output = self.model(**encoded_input)
 
-        # perform mean pooling
-        sentence_embeddings = self.mean_pooling(
-            model_output, encoded_input["attention_mask"]
-        )
+            # perform mean pooling
+            sentence_embeddings = self.mean_pooling(
+                model_output, encoded_input["attention_mask"]
+            )
 
-        # normalize embeddings
-        sentence_embeddings = torch.nn.functional.normalize(
-            sentence_embeddings, p=2, dim=1
-        )
+            # normalize embeddings
+            sentence_embeddings = torch.nn.functional.normalize(
+                sentence_embeddings, p=2, dim=1
+            )
 
-        # convert to list for JSON serialization
-        return sentence_embeddings.cpu().tolist()
+            # convert to list for JSON serialization
+            return sentence_embeddings.cpu().tolist()
+        else:
+            # Use sentence-transformers encode method
+            embeddings = self.model.encode(
+                texts, batch_size=100, convert_to_numpy=True, normalize_embeddings=True
+            )
+            return embeddings.tolist()
 
     def get_embedding_dimension(self) -> int:
-        return self.model.config.hidden_size
+        if self.model_name == "SBERT":
+            return self.model.config.hidden_size
+        else:  # MiniLM
+            return self.model.get_sentence_embedding_dimension()
 
 
 __all__ = ["Embeddor", "node_descriptions", "relationship_descriptions"]

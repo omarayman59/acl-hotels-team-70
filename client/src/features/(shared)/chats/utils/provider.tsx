@@ -2,7 +2,11 @@
 
 import { createContext, useContext, useRef, useState } from "react";
 
-import { type ChatsContextType, type ChatType } from "../types";
+import {
+  type ChatsContextType,
+  type ChatType,
+  type RAGOptionsType,
+} from "../types";
 
 import { generateId, createNewChat } from "./helpers";
 
@@ -22,6 +26,13 @@ const ChatsProvider = ({ children }: { children: React.ReactNode }) => {
   const initialChat = createNewChat();
   const [currentChat, setCurrentChat] = useState<ChatType>(initialChat);
   const [chats, setChats] = useState<ChatType[]>([initialChat]);
+  const [ragOptions, setRAGOptions] = useState<RAGOptionsType>({
+    selection: ["semantic", "baseline"],
+    embeddingModel: "SBERT",
+    LLMModel: "gpt-5-mini-2025-08-07",
+  });
+  const [showLastMessageDetail, setShowLastMessageDetail] =
+    useState<boolean>(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   function handleCreateNewChat() {
@@ -147,9 +158,13 @@ const ChatsProvider = ({ children }: { children: React.ReactNode }) => {
       value={{
         currentChat,
         chats,
+        ragOptions,
         abortControllerRef,
+        showLastMessageDetail,
         setCurrentChat,
         setChats,
+        setRAGOptions,
+        setShowLastMessageDetail,
         handleCreateNewChat,
         handleSelectChat,
         handleDeleteChat,
