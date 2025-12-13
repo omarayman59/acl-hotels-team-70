@@ -24,7 +24,7 @@ const HomePage = () => {
     <div
       className={cn("flex flex-col h-full items-center", {
         "justify-center -mt-16 space-y-6": shouldCenterHigher,
-        "justify-end -mt-2 space-y-6": shouldCenterHigherButExtraDetail,
+        "justify-center -mt-2 space-y-6": shouldCenterHigherButExtraDetail,
         "justify-end pb-6": shouldPlaceAtBottom,
         "justify-center space-y-6": isEmptyChat && isMobile,
         "justify-end space-y-6":

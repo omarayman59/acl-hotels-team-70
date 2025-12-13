@@ -109,6 +109,7 @@ class Embeddor:
         )
 
     def generate_embeddings_batch(self, texts: List[str]) -> List[List[float]]:
+        print("EMBEDDING PROMPT WITH:😄😄😄😄😄😄", self.model_name)
         if self.model_name == "SBERT":
             # tokenize all texts
             encoded_input = self.tokenizer(

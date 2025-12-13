@@ -19,20 +19,39 @@ except OSError:
 def get_entity_types(text: str) -> Dict[str, str]:
     doc = nlp(text)
 
+    print("DOC:😄😄😄😄😄😄", doc)
+
     entity_map = {}
 
     for ent in doc.ents:
         # Map spaCy entity labels to more intuitive names
         entity_type = _map_entity_label(ent.label_)
+        print("ENTITY:😄😄😄😄😄😄", ent.text, entity_type)
         entity_map[ent.text] = entity_type
 
     return entity_map
 
 
 def _map_entity_label(label: str) -> str:
-    label_mapping = {"GPE": "Location", "LOC": "Location"}
+    label_mapping = {"GPE": "Location", "LOC": "Location", "DATE": "Age"}
 
     return label_mapping.get(label, label)
+
+
+def map_age_to_group(age: int) -> str:
+    """Map a numerical age to an age group string."""
+    if 18 <= age <= 24:
+        return "18-24"
+    elif 25 <= age <= 34:
+        return "25-34"
+    elif 35 <= age <= 44:
+        return "35-44"
+    elif 45 <= age <= 54:
+        return "45-54"
+    elif age >= 55:
+        return "55+"
+    else:
+        return None
 
 
 class Preprocessor:
@@ -60,11 +79,31 @@ class Preprocessor:
                 elif entity_lower in COUNTRIES:
                     values["country"].append(entity_text.capitalize())
 
+            if entity_type == "Age":
+                age = (
+                    entity_text.replace("years", "")
+                    .replace("year", "")
+                    .replace("old", "")
+                    .strip()
+                )
+                age = int(age)
+                age_group = map_age_to_group(age)
+                if age_group:
+                    values["age"] = age_group
+
         # Extract numbers (for ratings, limits, etc.)
         numbers = re.findall(r"\b\d+(?:\.\d+)?\b", self.prompt)
         if numbers:
             values["num"] = float(numbers[0])
             values["rating_num"] = float(numbers[0])
+
+        gender = re.search(r"(?:male|female|man|woman|lady|girl|boy)", prompt_lower)
+        if gender:
+            values["gender"] = gender.group(0).capitalize()
+
+        traveler_type = re.search(r"(?:solo|couple|family|business)", prompt_lower)
+        if traveler_type:
+            values["type"] = traveler_type.group(0).capitalize()
 
         # Extract quality descriptors and map to ratings
         quality_mapping = {

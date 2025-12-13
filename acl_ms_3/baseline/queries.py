@@ -27,10 +27,10 @@ queries = [
     },
     # Query 4: Hotels by traveler demographics
     {
-        "query": """MATCH (traveller:Traveller)-[:STAYED_AT]->(hotel:Hotel) WHERE ($age_group IS NULL OR traveller.age_group = $age_group) AND ($gender IS NULL OR traveller.gender = $gender) RETURN DISTINCT hotel ORDER BY hotel.average_reviews_score DESC LIMIT $limit_num""",
+        "query": """MATCH (traveller:Traveller)-[:STAYED_AT]->(hotel:Hotel) WHERE ($age IS NULL OR traveller.age = $age) AND ($gender IS NULL OR traveller.gender = $gender) RETURN DISTINCT hotel ORDER BY hotel.average_reviews_score DESC LIMIT $limit_num""",
         "intents": {
             "required": ["demographics"],
-            "optional": [],
+            "optional": ["location"],
         },
     },
     # Query 5: Hotels by cleanliness rating
@@ -38,7 +38,9 @@ queries = [
         "query": """MATCH (hotel:Hotel) WHERE $num IS NULL OR hotel.cleanliness_base >= $num RETURN hotel ORDER BY hotel.cleanliness_base DESC LIMIT $limit_num""",
         "intents": {
             "required": ["rating", "cleanliness"],
-            "optional": [],
+            "optional": [
+                "location",
+            ],
         },
     },
     # Query 6: Hotels by value for money rating
@@ -46,7 +48,7 @@ queries = [
         "query": """MATCH (hotel:Hotel) WHERE $num IS NULL OR hotel.value_for_money_base >= $num RETURN hotel ORDER BY hotel.value_for_money_base DESC LIMIT $limit_num""",
         "intents": {
             "required": ["rating", "value_for_money"],
-            "optional": [],
+            "optional": ["location"],
         },
     },
     # Query 7: Hotels by location rating
@@ -62,7 +64,7 @@ queries = [
         "query": """MATCH (hotel:Hotel) WHERE $num IS NULL OR hotel.comfort_base >= $num RETURN hotel ORDER BY hotel.comfort_base DESC LIMIT $limit_num""",
         "intents": {
             "required": ["rating", "comfort"],
-            "optional": [],
+            "optional": ["location"],
         },
     },
     # Query 9: Hotels by facilities rating
@@ -70,7 +72,7 @@ queries = [
         "query": """MATCH (hotel:Hotel) WHERE $num IS NULL OR hotel.facilities_base >= $num RETURN hotel ORDER BY hotel.facilities_base DESC LIMIT $limit_num""",
         "intents": {
             "required": ["rating", "facilities"],
-            "optional": [],
+            "optional": ["location"],
         },
     },
     # Query 10: Hotels by staff rating
@@ -78,7 +80,9 @@ queries = [
         "query": """MATCH (hotel:Hotel) WHERE $num IS NULL OR hotel.staff_base >= $num RETURN hotel ORDER BY hotel.staff_base DESC LIMIT $limit_num""",
         "intents": {
             "required": ["rating", "staff"],
-            "optional": [],
+            "optional": [
+                "location",
+            ],
         },
     },
 ]
@@ -121,7 +125,7 @@ def _populate_query_parameters(query: str, parameters: Dict[str, Any]) -> str:
         "num": None,
         "city": None,
         "country": None,
-        "age_group": None,
+        "age": None,
         "gender": None,
         "type": None,
     }

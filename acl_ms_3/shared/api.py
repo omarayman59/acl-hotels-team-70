@@ -34,6 +34,7 @@ def compare_models():
     }
     """
     try:
+
         # Check content type
         if not request.is_json:
             return jsonify({"error": "Content-Type must be application/json"}), 400
@@ -60,6 +61,11 @@ def compare_models():
         # Validate non-empty query
         if not data["query"].strip():
             return jsonify({"error": "'query' cannot be empty"}), 400
+
+        print(
+            "Received data😄😄😄😄:",
+            data,
+        )
 
         # Process request
         comparison_cycle = ComparisonCycle(data["query"], data["options"])

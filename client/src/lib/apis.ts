@@ -56,11 +56,11 @@ async function processQuery({
     },
     body: JSON.stringify({
       query: prompt,
-      ...(options && {
-        selection: options.selection,
-        embedding_model: options.embeddingModel,
-        llm_model: options.LLMModel,
-      }),
+      options: {
+        selection: options?.selection || ["semantic", "baseline"],
+        embeddingModel: options?.embeddingModel || "SBERT",
+        LLMModel: options?.LLMModel || "gpt-5-mini-2025-08-07",
+      },
     }),
     signal,
   });

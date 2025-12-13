@@ -52,6 +52,13 @@ intents = {
         "gender",
         "male travellers",
         "female travellers",
+        "year",
+        "years",
+        "young",
+        "male",
+        "female",
+        "solo",
+        "couple",
     ],
     "cleanliness": [
         "cleanliness",
@@ -139,6 +146,14 @@ intents = {
         "personnel",
         "hospitality",
         "polite staff",
+    ],
+    "location_rating": [
+        "location rating",
+        "location score",
+        "well located",
+        "convenient location",
+        "accessibility",
+        "geographical location",
     ],
 }
 
