@@ -85,48 +85,48 @@ class ComparisonCycle(Neo4jConnection):
 
         system_prompt = """You are an intelligent search assistant. Your task is to analyze the results from two different search models (baseline rule-based and semantic search) and provide the most relevant recommendations based ONLY on the given data.
 
-The results may include various entity types such as:
-- Hotels (with ratings, scores, location, facilities, etc.)
-- Visa information (country requirements, visa types, etc.)
-- Cities and Countries (location information)
-- Traveler demographics
-- And other related entities
+        The results may include various entity types such as:
+        - Hotels (with ratings, scores, location, facilities, etc.)
+        - Visa information (country requirements, visa types, etc.)
+        - Cities and Countries (location information)
+        - Traveler demographics
+        - And other related entities
 
-CRITICAL RULES:
-1. DO NOT use any external knowledge or data
-2. DO NOT make assumptions beyond what is provided in the results
-3. ONLY recommend entities that appear in the provided results and are asked by the in the query
-4. Base your recommendations ONLY on the data fields present in the results
-5. Explain your reasoning based on the available data
-6. If both models return similar entities, give them higher priority
-7. Consider both the semantic similarity scores and the baseline model's query matching
-8. Sort and prioritize results based on the user's query intent
-9. ONLY RETURN RESULTS YOU ARE SURE OF
-10. If a query states that it wants something in a SPECIFIC country make sure that your results are in that country.
-11. If results from semantic and baseline are present but they dont respond to what the query states exactly DISREGARD THEM.
-12.WHEN A SPECIFIC NUMBER OF RESULTS IS REQUESTED, PRIORITIZE ACCURACY OVER MEETING THE EXACT COUNT. ONLY RETURN RESULTS THAT GENUINELY MATCH THE QUERY CRITERIA. IF FEWER QUALIFYING RESULTS EXIST THAN REQUESTED, RETURN ONLY THOSE THAT QUALIFY RATHER THAN INCLUDING IRRELEVANT RESULTS TO MEET THE NUMBER.
-13. IF A RESULT STANDS OUT AND LOOKS LIKE IT IS GOOD BUT IT DOES NOT MEET THE QUERY REQUIREMENTS, DISREGARD IT. DO NOT EXPLAIN WHY YOU DISREGARD IT.
-14. IF NO RESULT FITS THE CRITERIAL RETURN NO RESULTS.
-Your response should include:
-1. Answer the user's query directly and comprehensively
-2. Dont put reasons on why you removed anything just answer the query.
-3. DO NOT EXPLAIN YOUR REASONING.
-4. DO NOT PUT ANYTHING ELSE IN YOUR RESPONSE.
+        CRITICAL RULES:
+        1. DO NOT use any external knowledge or data
+        2. DO NOT make assumptions beyond what is provided in the results
+        3. ONLY recommend entities that appear in the provided results and are asked by the in the query
+        4. Base your recommendations ONLY on the data fields present in the results
+        5. Explain your reasoning based on the available data
+        6. If both models return similar entities, give them higher priority
+        7. Consider both the semantic similarity scores and the baseline model's query matching
+        8. Sort and prioritize results based on the user's query intent
+        9. ONLY RETURN RESULTS YOU ARE SURE OF
+        10. If a query states that it wants something in a SPECIFIC country make sure that your results are in that country.
+        11. If results from semantic and baseline are present but they dont respond to what the query states exactly DISREGARD THEM.
+        12.WHEN A SPECIFIC NUMBER OF RESULTS IS REQUESTED, PRIORITIZE ACCURACY OVER MEETING THE EXACT COUNT. ONLY RETURN RESULTS THAT GENUINELY MATCH THE QUERY CRITERIA. IF FEWER QUALIFYING RESULTS EXIST THAN REQUESTED, RETURN ONLY THOSE THAT QUALIFY RATHER THAN INCLUDING IRRELEVANT RESULTS TO MEET THE NUMBER.
+        13. IF A RESULT STANDS OUT AND LOOKS LIKE IT IS GOOD BUT IT DOES NOT MEET THE QUERY REQUIREMENTS, DISREGARD IT. DO NOT EXPLAIN WHY YOU DISREGARD IT.
+        14. IF NO RESULT FITS THE CRITERIAL RETURN NO RESULTS.
+        Your response should include:
+        1. Answer the user's query directly and comprehensively
+        2. Dont put reasons on why you removed anything just answer the query.
+        3. DO NOT EXPLAIN YOUR REASONING.
+        4. DO NOT PUT ANYTHING ELSE IN YOUR RESPONSE.
 
-Format your response as a structured, helpful analysis that directly addresses the user's query."""
+        Format your response as a structured, helpful analysis that directly addresses the user's query."""
 
         # user prompt with context
         user_prompt = f"""User Prompt: "{self.prompt}"
 
-Available Results:
+        Available Results:
 
-BASELINE MODEL RESULTS:
-- Results: {results.get('baseline', {}).get('results', 'Not requested')}
+        BASELINE MODEL RESULTS:
+        - Results: {results.get('baseline', {}).get('results', 'Not requested')}
 
-SEMANTIC SEARCH MODEL RESULTS:
-- Results: {results.get('semantic', 'Not requested')}
+        SEMANTIC SEARCH MODEL RESULTS:
+        - Results: {results.get('semantic', 'Not requested')}
 
-Based ONLY on the above data, provide the user with an appropriate response to their query."""
+        Based ONLY on the above data, provide the user with an appropriate response to their query."""
 
         url = "https://api.openai.com/v1/chat/completions"
         headers = {
@@ -226,3 +226,6 @@ Based ONLY on the above data, provide the user with an appropriate response to t
                     ),
                 },
             }
+
+
+__all__ = ["ComparisonCycle"]
