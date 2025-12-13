@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional
 queries = [
     # Query 1: Hotels by rating and optional location
     {
-        "query": """MATCH (h:Hotel)-[:LOCATED_IN]->(c:City)-[:LOCATED_IN]->(co:Country) WHERE ($rating_num IS NULL OR h.average_reviews_score >= $rating_num) AND ($city IS NULL OR c.city_name IN $city) AND ($country IS NULL OR co.country_name IN $country) RETURN h ORDER BY h.average_reviews_score DESC LIMIT $limit_num""",
+        "query": """MATCH (hotel:Hotel)-[:LOCATED_IN]->(city:City)-[:LOCATED_IN]->(country:Country) WHERE ($rating_num IS NULL OR hotel.average_reviews_score >= $rating_num) AND ($city IS NULL OR city.city_name IN $city) AND ($country IS NULL OR country.country_name IN $country) RETURN hotel ORDER BY hotel.average_reviews_score DESC LIMIT $limit_num""",
         "intents": {
             "required": ["rating"],
             "optional": ["location"],
@@ -11,7 +11,7 @@ queries = [
     },
     # Query 2: Hotels by city and/or country
     {
-        "query": """MATCH (h:Hotel)-[:LOCATED_IN]->(c:City)-[:LOCATED_IN]->(co:Country) WHERE ($city IS NULL OR c.city_name IN $city) AND ($country IS NULL OR co.country_name IN $country) RETURN h LIMIT $limit_num""",
+        "query": """MATCH (hotel:Hotel)-[:LOCATED_IN]->(city:City)-[:LOCATED_IN]->(country:Country) WHERE ($city IS NULL OR city.city_name IN $city) AND ($country IS NULL OR country.country_name IN $country) RETURN hotel LIMIT $limit_num""",
         "intents": {
             "required": ["location"],
             "optional": [],
@@ -19,7 +19,7 @@ queries = [
     },
     # Query 3: Visa information by country and type
     {
-        "query": """MATCH (v:Visa) WHERE ($country IS NULL OR v.to_country IN $country) OR ($country IS NULL OR v.from_country IN $country) AND ($type IS NULL OR v.visa_type = $type) RETURN v LIMIT $limit_num""",
+        "query": """MATCH (visa:Visa) WHERE ($country IS NULL OR visa.to_country IN $country) OR ($country IS NULL OR visa.from_country IN $country) AND ($type IS NULL OR visa.visa_type = $type) RETURN visa LIMIT $limit_num""",
         "intents": {
             "required": ["visa", "location"],
             "optional": ["type"],
@@ -27,7 +27,7 @@ queries = [
     },
     # Query 4: Hotels by traveler demographics
     {
-        "query": """MATCH (t:Traveller)-[:STAYED_AT]->(h:Hotel) WHERE ($age_group IS NULL OR t.age_group = $age_group) AND ($gender IS NULL OR t.gender = $gender) RETURN DISTINCT h LIMIT $limit_num""",
+        "query": """MATCH (traveller:Traveller)-[:STAYED_AT]->(hotel:Hotel) WHERE ($age_group IS NULL OR traveller.age_group = $age_group) AND ($gender IS NULL OR traveller.gender = $gender) RETURN DISTINCT hotel LIMIT $limit_num""",
         "intents": {
             "required": ["demographics"],
             "optional": [],
@@ -35,49 +35,49 @@ queries = [
     },
     # Query 5: Hotels by cleanliness rating
     {
-        "query": """MATCH (h:Hotel) WHERE h.cleanliness_base >= $num RETURN h.hotel_name ORDER BY h DESC LIMIT $limit_num""",
+        "query": """MATCH (hotel:Hotel) WHERE hotel.cleanliness_base >= $num RETURN hotel ORDER BY hotel.cleanliness_base DESC LIMIT $limit_num""",
         "intents": {
-            "required": ["cleanliness"],
+            "required": ["rating", "cleanliness"],
             "optional": [],
         },
     },
     # Query 6: Hotels by value for money rating
     {
-        "query": """MATCH (h:Hotel) WHERE h.value_for_money_base >= $num RETURN h.hotel_name ORDER BY h DESC LIMIT $limit_num""",
+        "query": """MATCH (hotel:Hotel) WHERE hotel.value_for_money_base >= $num RETURN hotel ORDER BY hotel.value_for_money_base DESC LIMIT $limit_num""",
         "intents": {
-            "required": ["value_for_money"],
+            "required": ["rating", "value_for_money"],
             "optional": [],
         },
     },
     # Query 7: Hotels by location rating
     {
-        "query": """MATCH (h:Hotel) WHERE h.location_base >= $num RETURN h.hotel_name ORDER BY h DESC LIMIT $limit_num""",
+        "query": """MATCH (hotel:Hotel) WHERE hotel.location_base >= $num RETURN hotel ORDER BY hotel.location_base DESC LIMIT $limit_num""",
         "intents": {
-            "required": ["location_rating"],
+            "required": ["rating", "location_rating"],
             "optional": [],
         },
     },
     # Query 8: Hotels by comfort rating
     {
-        "query": """MATCH (h:Hotel) WHERE h.comfort_base >= $num RETURN h.hotel_name ORDER BY h DESC LIMIT $limit_num""",
+        "query": """MATCH (hotel:Hotel) WHERE hotel.comfort_base >= $num RETURN hotel ORDER BY hotel.comfort_base DESC LIMIT $limit_num""",
         "intents": {
-            "required": ["comfort"],
+            "required": ["rating", "comfort"],
             "optional": [],
         },
     },
     # Query 9: Hotels by facilities rating
     {
-        "query": """MATCH (h:Hotel) WHERE h.facilities_base >= $num RETURN h.hotel_name ORDER BY h DESC LIMIT $limit_num""",
+        "query": """MATCH (hotel:Hotel) WHERE hotel.facilities_base >= $num RETURN hotel ORDER BY hotel.facilities_base DESC LIMIT $limit_num""",
         "intents": {
-            "required": ["facilities"],
+            "required": ["rating", "facilities"],
             "optional": [],
         },
     },
     # Query 10: Hotels by staff rating
     {
-        "query": """MATCH (h:Hotel) WHERE h.staff_base >= $num RETURN h.hotel_name ORDER BY h DESC LIMIT $limit_num""",
+        "query": """MATCH (hotel:Hotel) WHERE hotel.staff_base >= $num RETURN hotel ORDER BY hotel.staff_base DESC LIMIT $limit_num""",
         "intents": {
-            "required": ["staff"],
+            "required": ["rating", "staff"],
             "optional": [],
         },
     },

@@ -127,13 +127,13 @@ intents = {
         "cost-efficient",
         "cost-benefit",
     ],
-    "location_rating": [
-        "location rating",
-        "location score",
-        "well located",
-        "convenient location",
-        "accessibility",
-    ],
+    # "location_rating": [
+    #     "location rating",
+    #     "location score",
+    #     "well located",
+    #     "convenient location",
+    #     "accessibility",
+    # ],
     "staff": [
         "staff",
         "service",

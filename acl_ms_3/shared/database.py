@@ -38,35 +38,53 @@ class Neo4jConnection:
         if self.driver:
             self.driver.close()
 
-    def execute_query(self, query: str) -> List[Dict[str, Any]]:
+    def _remove_embeddings_recursive(self, obj: Any) -> Any:
+        if isinstance(obj, dict):
+            return {
+                key: self._remove_embeddings_recursive(value)
+                for key, value in obj.items()
+                if key != "embedding"
+            }
+        elif isinstance(obj, list):
+            return [self._remove_embeddings_recursive(item) for item in obj]
+        else:
+            return obj
+
+    def execute_query_with_params(
+        self, query: str, parameters: Dict[str, Any] = None
+    ) -> List[Dict[str, Any]]:
         with self.driver.session() as session:
-            result = session.run(query)
+            result = session.run(query, parameters or {})
             records = []
             for record in result:
-                # Convert Neo4j record to dictionary
                 record_dict = {}
                 for key in record.keys():
                     value = record[key]
-                    # Handle Neo4j node objects
                     if hasattr(value, "__dict__"):
                         record_dict[key] = dict(value)
                     else:
                         record_dict[key] = value
+                # Remove embedding fields from the record
+                record_dict = self._remove_embeddings_recursive(record_dict)
                 records.append(record_dict)
             return records
 
     def get_all_node_labels(self) -> List[str]:
         query = "CALL db.labels()"
-        result = self.execute_query(query)
-        labels = [record["label"] for record in result]
-        print(f"Found {len(labels)} node labels: {labels}")
+        result = self.execute_query_with_params(query)
+        labels = [
+            record["label"]
+            for record in result
+            if record["label"] != "RelationshipType"
+        ]
+        # print(f"Found {len(labels)} node labels: {labels}")
         return labels
 
     def get_all_relationship_types(self) -> List[str]:
         query = "CALL db.relationshipTypes()"
-        result = self.execute_query(query)
+        result = self.execute_query_with_params(query)
         rel_types = [record["relationshipType"] for record in result]
-        print(f"Found {len(rel_types)} relationship types: {rel_types}")
+        # print(f"Found {len(rel_types)} relationship types: {rel_types}")
         return rel_types
 
     def get_relationships_by_type(self, rel_type: str) -> List[Dict[str, Any]]:
@@ -82,7 +100,7 @@ class Neo4jConnection:
         """
 
         try:
-            result = self.execute_query(query)
+            result = self.execute_query_with_params(query)
             print(f"Fetched {len(result)} relationship instances of type '{rel_type}'")
             return result
         except Exception as e:
@@ -93,7 +111,7 @@ class Neo4jConnection:
         query = f"MATCH (n:{label}) RETURN id(n) as node_id, labels(n) as labels, properties(n) as properties"
 
         try:
-            result = self.execute_query(query)
+            result = self.execute_query_with_params(query)
             print(f"Fetched {len(result)} nodes with label '{label}'")
             return result
         except Exception as e:
@@ -155,7 +173,7 @@ class Neo4jConnection:
     def create_node_vector_index(self):
         # get all labels that we've just embedded
         labels_query = "CALL db.labels()"
-        labels_result = self.execute_query(labels_query)
+        labels_result = self.execute_query_with_params(labels_query)
         labels = [
             record["label"]
             for record in labels_result
@@ -172,7 +190,7 @@ class Neo4jConnection:
             # drop the index if it exists
             try:
                 drop_query = f"DROP INDEX {current_index_name} IF EXISTS"
-                self.execute_query(drop_query)
+                self.execute_query_with_params(drop_query)
                 print(
                     f"  Dropped existing index '{current_index_name}' (if it existed)"
                 )
@@ -192,7 +210,7 @@ class Neo4jConnection:
                     }}
                 }}
                 """
-                self.execute_query(create_query)
+                self.execute_query_with_params(create_query)
                 print(f"  ✓ Created vector index '{current_index_name}'")
                 created_indices.append(current_index_name)
             except Exception as e:
@@ -217,7 +235,7 @@ class Neo4jConnection:
             # Drop the index if it exists
             try:
                 drop_query = f"DROP INDEX {index_name} IF EXISTS"
-                self.execute_query(drop_query)
+                self.execute_query_with_params(drop_query)
                 print(f"  Dropped existing index '{index_name}' (if it existed)")
             except Exception as e:
                 pass  # Index may not exist
@@ -235,7 +253,7 @@ class Neo4jConnection:
                     }}
                 }}
                 """
-                self.execute_query(create_query)
+                self.execute_query_with_params(create_query)
                 print(
                     f"  ✓ Created vector index '{index_name}' for {rel_type} relationships"
                 )
@@ -431,7 +449,7 @@ class Neo4jConnection:
         ORDER BY count DESC
         """
 
-        result = self.execute_query(query)
+        result = self.execute_query_with_params(query)
 
         total = 0
         for record in result:
@@ -450,7 +468,7 @@ class Neo4jConnection:
         LIMIT 1
         """
 
-        sample = self.execute_query(sample_query)
+        sample = self.execute_query_with_params(sample_query)
         if sample:
             record = sample[0]
             print(f"\nSample node:")
@@ -471,7 +489,7 @@ class Neo4jConnection:
         ORDER BY count DESC
         """
 
-        result = self.execute_query(query)
+        result = self.execute_query_with_params(query)
 
         if not result:
             print("  ✗ No relationship embeddings found!")
@@ -498,7 +516,7 @@ class Neo4jConnection:
         LIMIT 1
         """
 
-        sample = self.execute_query(sample_query)
+        sample = self.execute_query_with_params(sample_query)
         if sample:
             record = sample[0]
             print(f"\nSample relationship:")
@@ -506,6 +524,92 @@ class Neo4jConnection:
             print(f"  From: {record['start_label']} -> To: {record['end_label']}")
             print(f"  Embedding size: {record['embedding_size']}")
             print(f"  ✓ Relationship instance embeddings verified!")
+
+    def get_closest_nodes(
+        self, embedding: List[float], limit: int = 10
+    ) -> List[Dict[str, Any]]:
+        all_results = []
+        labels = self.get_all_node_labels()
+
+        for label in labels:
+            if label == "RelationshipType":  # Skip metadata nodes
+                continue
+
+            index_name = f"node_embeddings_{label}"
+
+            query = """
+            CALL db.index.vector.queryNodes($index_name, $limit, $embedding)
+            YIELD node, score
+            RETURN 
+                labels(node) as labels,
+                properties(node) as properties,
+                score
+            ORDER BY score DESC
+            """
+
+            try:
+                results = self.execute_query_with_params(
+                    query,
+                    {
+                        "index_name": index_name,
+                        "limit": limit,
+                        "embedding": embedding,
+                    },
+                )
+
+                for result in results:
+                    result["label"] = label
+
+                all_results.extend(results)
+            except Exception as e:
+                print(f" Error searching nodes with label '{label}': {e}")
+
+        # Sort all results by score and return top results
+        all_results.sort(key=lambda x: x["score"], reverse=True)
+        return all_results[:limit]
+
+    def get_closest_relationships(
+        self, embedding: List[float], limit: int = 10
+    ) -> List[Dict[str, Any]]:
+        all_results = []
+        rel_types = self.get_all_relationship_types()
+
+        for rel_type in rel_types:
+            index_name = f"rel_embeddings_{rel_type}"
+
+            query = """
+            CALL db.index.vector.queryRelationships($index_name, $limit, $embedding)
+            YIELD relationship, score
+            WITH relationship, score
+            MATCH (start)-[relationship]->(end)
+            RETURN 
+                type(relationship) as rel_type,
+                properties(relationship) as rel_properties,
+                labels(start) as start_labels,
+                properties(start) as start_properties,
+                labels(end) as end_labels,
+                properties(end) as end_properties,
+                score
+            ORDER BY score DESC
+            """
+
+            try:
+                results = self.execute_query_with_params(
+                    query,
+                    {
+                        "index_name": index_name,
+                        "limit": limit,
+                        "embedding": embedding,
+                    },
+                )
+
+                all_results.extend(results)
+            except Exception as e:
+                print(f" Error searching relationships of type '{rel_type}': {e}")
+
+        # Sort all results by score and return top results
+        all_results.sort(key=lambda x: x["score"], reverse=True)
+        return all_results[:limit]
 
 
 __all__ = ["Neo4jConnection"]

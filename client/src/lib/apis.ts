@@ -20,7 +20,7 @@ async function processQuery({
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ prompt }),
+    body: JSON.stringify({ query: prompt }),
     signal,
   });
 
@@ -34,7 +34,7 @@ async function processQuery({
 
   return {
     success: data.success,
-    response: data?.llm_response ?? "Problem with response",
+    response: data?.llm_filtered?.raw_response ?? "Problem with response",
   };
 }
 

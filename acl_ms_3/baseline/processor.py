@@ -2,8 +2,9 @@ import re
 from typing import Any, Dict, List
 
 import spacy
-from data import CITIES, COUNTRIES
-from intents import intents
+
+from acl_ms_3.baseline.data import CITIES, COUNTRIES
+from acl_ms_3.baseline.intents import intents
 
 try:
     nlp = spacy.load("en_core_web_sm")
@@ -68,6 +69,7 @@ class Preprocessor:
         # Extract quality descriptors and map to ratings
         quality_mapping = {
             "excellent": 9.0,
+            "top": 9.0,
             "great": 8.5,
             "very good": 8.0,
             "good": 7.0,
