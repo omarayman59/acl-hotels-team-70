@@ -167,6 +167,10 @@ Based ONLY on the above data, provide the user with an appropriate response to t
                 "error": None,
                 "raw_response": llm_response,
                 # "context_sent": user_prompt,
+                "rag_response": {
+                    "semantic_response": results["semantic"],
+                    "baseline_response": results["baseline"],
+                },
                 "elapsed_time": elapsed_time,
                 "tokens_used": {
                     "prompt_tokens": response_data["usage"]["prompt_tokens"],
