@@ -47,7 +47,7 @@ export const RAGOptionsSchema = z
           "At least one method must be selected (semantic or baseline or both)",
       }),
     embeddingModel: z.enum(["SBERT", "MiniLM"]).optional(),
-    LLMModel: z.enum(["gpt-5-mini-2025-08-07", "gpt-4.1"]),
+    LLMModel: z.enum(["gpt-5-mini-2025-08-07", "gpt-4.1", "gpt-4o"]),
   })
   .superRefine((data, ctx) => {
     if (data.selection.includes("semantic")) {
