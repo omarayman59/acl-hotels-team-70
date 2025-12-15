@@ -15,7 +15,7 @@ load_dotenv()
 
 
 class ComparisonCycle(Neo4jConnection):
-    # options: Dict[str, Any] = {"selection": ["semantic", "baseline"], "LLMModel": "gpt-5-mini-2025-08-07" | "gpt-4.1", "embeddingModel": "SBERT" | "MiniLM"}
+    # options: Dict[str, Any] = {"selection": ["semantic", "baseline"], "LLMModel": "gpt-5-mini-2025-08-07" | "gpt-4.1" | "gpt-4o", "embeddingModel": "SBERT" | "MiniLM"}
     def __init__(self, prompt: str, options: Dict[str, Any]):
         self.embeddingModel = options.get("embeddingModel") or "SBERT"
         self.LLMModel = options.get("LLMModel") or "gpt-5-mini-2025-08-07"
@@ -104,16 +104,38 @@ class ComparisonCycle(Neo4jConnection):
         9. ONLY RETURN RESULTS YOU ARE SURE OF
         10. If a query states that it wants something in a SPECIFIC country make sure that your results are in that country.
         11. If results from semantic and baseline are present but they dont respond to what the query states exactly DISREGARD THEM.
-        12.WHEN A SPECIFIC NUMBER OF RESULTS IS REQUESTED, PRIORITIZE ACCURACY OVER MEETING THE EXACT COUNT. ONLY RETURN RESULTS THAT GENUINELY MATCH THE QUERY CRITERIA. IF FEWER QUALIFYING RESULTS EXIST THAN REQUESTED, RETURN ONLY THOSE THAT QUALIFY RATHER THAN INCLUDING IRRELEVANT RESULTS TO MEET THE NUMBER.
+        12. WHEN A SPECIFIC NUMBER OF RESULTS IS REQUESTED, PRIORITIZE ACCURACY OVER MEETING THE EXACT COUNT. ONLY RETURN RESULTS THAT GENUINELY MATCH THE QUERY CRITERIA. IF FEWER QUALIFYING RESULTS EXIST THAN REQUESTED, RETURN ONLY THOSE THAT QUALIFY RATHER THAN INCLUDING IRRELEVANT RESULTS TO MEET THE NUMBER.
         13. IF A RESULT STANDS OUT AND LOOKS LIKE IT IS GOOD BUT IT DOES NOT MEET THE QUERY REQUIREMENTS, DISREGARD IT. DO NOT EXPLAIN WHY YOU DISREGARD IT.
         14. IF NO RESULT FITS THE CRITERIAL RETURN NO RESULTS.
-        Your response should include:
+        
+        FORMATTING REQUIREMENTS:
         1. Answer the user's query directly and comprehensively
-        2. Dont put reasons on why you removed anything just answer the query.
-        3. DO NOT EXPLAIN YOUR REASONING.
-        4. DO NOT PUT ANYTHING ELSE IN YOUR RESPONSE.
+        2. Provide a brief, friendly introduction (2-3 sentences) that summarizes what you found and sets context for the results
+        3. DO NOT explain why you removed or excluded certain results
+        4. Use a conversational, helpful tone - imagine you're a knowledgeable travel assistant
+        5. Use **Markdown formatting** for your response:
+           - Use **bold** for hotel names, countries, cities, and other key entities
+           - Use proper headers (## for main sections)
+           - Use bullet points (-) or numbered lists for multiple results
+           - Use line breaks for better readability
+           - Convert underscores to spaces in feature names (e.g., "overall_rating" → "Overall Rating")
 
-        Format your response as a structured, helpful analysis that directly addresses the user's query."""
+        Example format:
+        Based on your search, I found some excellent options that match your criteria. Here are the top recommendations:
+        
+        ## Results
+        
+        **Hotel Name 1**
+        - Location: City, Country
+        - Overall Rating: X.X
+        - Price Level: $$$
+        
+        **Hotel Name 2**
+        - Location: City, Country
+        - Overall Rating: X.X
+        
+        Make sure the results are well-structured, conversational, and easy to read.
+        """
 
         # user prompt with context
         user_prompt = f"""User Prompt: "{self.prompt}"

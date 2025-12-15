@@ -36,7 +36,7 @@ export interface QueryResponse {
 export interface RAGOptionsType {
   selection: ("semantic" | "baseline")[];
   embeddingModel?: "SBERT" | "MiniLM";
-  LLMModel: "gpt-5-mini-2025-08-07" | "gpt-4.1";
+  LLMModel: "gpt-5-mini-2025-08-07" | "gpt-4.1" | "gpt-4o";
 }
 
 async function processQuery({

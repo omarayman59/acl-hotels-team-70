@@ -162,6 +162,7 @@ export const RAGOptions = () => {
                         gpt-5-mini
                       </SelectItem>
                       <SelectItem value="gpt-4.1">gpt-4.1</SelectItem>
+                      <SelectItem value="gpt-4o">gpt-4o</SelectItem>
                     </SelectContent>
                   </Select>
                 </FormControl>
