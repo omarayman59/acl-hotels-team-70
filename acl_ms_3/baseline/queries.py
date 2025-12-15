@@ -3,7 +3,10 @@ from typing import Any, Dict, List, Optional
 queries = [
     # Query 1: Hotels by rating and optional location
     {
-        "query": """MATCH (hotel:Hotel)-[:LOCATED_IN]->(city:City)-[:LOCATED_IN]->(country:Country) WHERE ($rating_num IS NULL OR hotel.average_reviews_score >= $rating_num) AND ($city IS NULL OR city.city_name IN $city) AND ($country IS NULL OR country.country_name IN $country) RETURN hotel, city, country ORDER BY hotel.average_reviews_score DESC LIMIT $limit_num""",
+        "query": """MATCH (hotel:Hotel)-[:LOCATED_IN]->(city:City)-[:LOCATED_IN]->(country:Country) 
+        WHERE ($rating_num IS NULL OR hotel.average_reviews_score >= $rating_num) AND ($city IS NULL OR city.city_name IN $city)
+         AND ($country IS NULL OR country.country_name IN $country) 
+        RETURN hotel, city, country ORDER BY hotel.average_reviews_score DESC LIMIT $limit_num""",
         "intents": {
             "required": ["rating"],
             "optional": ["location"],
@@ -19,7 +22,10 @@ queries = [
     },
     # Query 3: Visa information by country and type
     {
-        "query": """MATCH (visa:Visa) WHERE (($country IS NULL OR visa.to_country IN $country) OR ($country IS NULL OR visa.from_country IN $country)) AND ($type IS NULL OR visa.visa_type = $type) RETURN visa LIMIT $limit_num""",
+        "query": """MATCH (visa:Visa) 
+        WHERE (($country IS NULL OR visa.to_country IN $country) OR ($country IS NULL OR visa.from_country IN $country)) 
+         AND ($type IS NULL OR visa.visa_type = $type) 
+        RETURN visa LIMIT $limit_num""",
         "intents": {
             "required": ["visa", "location"],
             "optional": [],
@@ -35,7 +41,9 @@ queries = [
     },
     # Query 5: Hotels by cleanliness rating
     {
-        "query": """MATCH (hotel:Hotel)-[:LOCATED_IN]->(city:City)-[:LOCATED_IN]->(country:Country) WHERE ($num IS NULL OR hotel.cleanliness_base >= $num) AND ($city IS NULL OR city.city_name IN $city) AND ($country IS NULL OR country.country_name IN $country) RETURN hotel, city, country ORDER BY hotel.cleanliness_base DESC LIMIT $limit_num""",
+        "query": """MATCH (hotel:Hotel)-[:LOCATED_IN]->(city:City)-[:LOCATED_IN]->(country:Country) 
+        WHERE ($num IS NULL OR hotel.cleanliness_base >= $num) AND ($city IS NULL OR city.city_name IN $city) AND ($country IS NULL OR country.country_name IN $country) 
+        RETURN hotel, city, country ORDER BY hotel.cleanliness_base DESC LIMIT $limit_num""",
         "intents": {
             "required": ["rating", "cleanliness"],
             "optional": [

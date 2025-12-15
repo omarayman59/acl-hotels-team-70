@@ -151,6 +151,7 @@ intents = {
         "location rating",
         "location score",
         "well located",
+        "best location",
         "convenient location",
         "accessibility",
         "geographical location",
