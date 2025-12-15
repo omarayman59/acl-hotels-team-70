@@ -61,8 +61,8 @@ class ComparisonCycle(Neo4jConnection):
 
     def semantic_cycle(self) -> List[Dict[str, Any]]:
         embedding = self._semantic_embed_prompt()
-        closest_nodes = self.get_closest_nodes(embedding)
-        closest_relationships = self.get_closest_relationships(embedding)
+        closest_nodes = self.get_closest_nodes(embedding, 20)
+        closest_relationships = self.get_closest_relationships(embedding, 20)
 
         sorted_return = closest_nodes + closest_relationships
         sorted_return.sort(key=lambda x: x["score"], reverse=True)

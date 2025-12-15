@@ -107,13 +107,13 @@ class Preprocessor:
 
         # Extract quality descriptors and map to ratings
         quality_mapping = {
-            "excellent": 9.0,
-            "top": 9.0,
-            "great": 8.5,
+            "excellent": 8.0,
+            "top": 8.0,
+            "great": 8.0,
             "very good": 8.0,
-            "good": 7.0,
-            "average": 6.0,
-            "poor": 5.0,
+            "good": 8.0,
+            "average": 8.0,
+            "poor": 8.0,
         }
 
         for quality, rating in quality_mapping.items():
